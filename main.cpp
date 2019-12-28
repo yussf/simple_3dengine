@@ -84,7 +84,27 @@ void translateTriangle(triangle &T, triangle &transT, float offset){
 	transT.d[2].y = T.d[2].y;
 	transT.d[2].z = T.d[2].z + offset;
 }
+vec3d getNormal(triangle &T){
+	vec3d normal, line1, line2;
 
+	line1.x = T.d[1].x - T.d[0].x;
+	line1.y = T.d[1].y - T.d[0].y;
+	line1.z = T.d[1].z - T.d[0].z;
+
+	line2.x = T.d[2].x - T.d[0].x;
+	line2.y = T.d[2].y - T.d[0].y;
+	line2.z = T.d[2].z - T.d[0].z;
+
+	normal.x = line1.y*line2.z - line1.z*line2.y;
+	normal.y = line1.z*line2.x - line1.x*line2.z;
+	normal.z = line1.x*line2.y - line1.y*line2.x;
+
+	float norm = sqrtf(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
+
+	normal.x /= norm; normal.y /= norm; normal.z /= norm;
+
+	return normal;
+}
 void rotateTriangle(triangle &T, triangle &rotatedT, matrix4x4 &mat)
 {
 	vecxMatrix(T.d[0], rotatedT.d[0], mat);
@@ -130,9 +150,12 @@ void routine(mesh &mesh, SDL_Renderer* renderer, float elapsed_time)
 		rotateTriangle(T, rotatedTX, XRotation);
 		rotateTriangle(rotatedTX, rotatedTXZ, ZRotation);
 		translateTriangle(rotatedTXZ, transT, 3.0f);
-		projectTriangle(transT, projT);
-		scaleTriangle(projT);
-		drawTriangle(projT, renderer);
+		vec3d normal = getNormal(transT);
+		if (normal.z < 0){
+			projectTriangle(transT, projT);
+			scaleTriangle(projT);
+			drawTriangle(projT, renderer);
+		}
 	}
 }
 int main(int argc, char* argv[])
