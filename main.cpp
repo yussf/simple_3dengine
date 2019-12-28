@@ -1,10 +1,12 @@
 #include<SDL2/SDL.h>
 #include <stdio.h>
+#include <iostream>
 #include <vector>
 #include <chrono>
+#include <string>
 #define WINDOW_HEIGTH 360
 #define WINDOW_WIDTH 480
-
+#define DEBUG_MODE 0
 using namespace std;
 using namespace std::chrono;
 
@@ -48,8 +50,8 @@ struct vec3d
 	{
 		float r = 0;
 		r += x * a.x;
-		r = y * a.y;
-		r = z * a.z;
+		r += y * a.y;
+		r += z * a.z;
 		return r;
 	}
 	vec3d operator^(const vec3d& a) const
@@ -60,12 +62,15 @@ struct vec3d
 		r.z = x*a.y - y*a.x;
 		return r;
 	}
-	float getNorm(){
-		return sqrtf((*this)*(*this));
+	double getNorm(){
+		return sqrtf(x*x + y*y + z*z);
 	}
-	void normalize(){
+	vec3d normalize(){
 		float norm = this->getNorm();
 		x /= norm; y /= norm; z /= norm;
+	}
+	string toString(){
+		return "("+to_string(x)+","+to_string(y)+","+to_string(z)+")";
 	}
 };
 struct triangle
@@ -86,6 +91,8 @@ struct matrix3x3
 };
 matrix4x4 projectionMarix;
 vec3d CamVec;
+float global_step;
+int print;
 void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
 {
 	float w;
@@ -182,14 +189,22 @@ void routine(mesh &mesh, SDL_Renderer* renderer, float elapsed_time)
 {
 	matrix4x4 ZRotation = createRotationMatrix(elapsed_time*0.5f, 'z');
 	matrix4x4 XRotation = createRotationMatrix(elapsed_time*0.5f, 'x');
-	for (auto T: mesh.T){
+	for (auto T : mesh.T){
 		triangle projT, transT, rotatedTX, rotatedTXZ;
 		rotateTriangle(T, rotatedTX, XRotation);
 		rotateTriangle(rotatedTX, rotatedTXZ, ZRotation);
 		translateTriangle(rotatedTXZ, transT, 3.0f);
 		vec3d normal = getNormal(transT);
-		//if (normal * (transT.d[0] - CamVec) < 0){
-		if (normal.z <  0)
+#if DEBUG_MODE
+		if (print){
+			cout << "triangle" << endl;
+			cout << normal.toString() << endl;
+			cout << normal * (transT.d[1] - CamVec) << endl;
+			cout << "===========================" << endl;
+		}
+		if (i == 3) print = 0;
+#endif
+		if (normal * (transT.d[0] - CamVec) < 0)
 		{
 			projectTriangle(transT, projT);
 			scaleTriangle(projT);
@@ -199,8 +214,15 @@ void routine(mesh &mesh, SDL_Renderer* renderer, float elapsed_time)
 }
 int main(int argc, char* argv[])
 {
+	int mode;
+	if (argc > 1){
+		mode = atoi(argv[1]);
+	}else{
+		mode = 0;
+	}
 	auto initial_time = system_clock::now();
 	mesh cube;
+	print = 0;
 	cube.T = {
 		// SOUTH
 		{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
@@ -255,14 +277,41 @@ int main(int argc, char* argv[])
                 SDL_RenderClear(renderer);
 
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+				if (mode == 0){
 				auto current_time = system_clock::now();
 				auto elapsed = duration<float>(current_time - initial_time);
                 routine(cube,renderer,elapsed.count());
+				}else if(mode == 1){
+					routine(cube,renderer,global_step);
+				}
                 SDL_RenderPresent(renderer);
 
                 while (SDL_PollEvent(&event)) {
                     if (event.type == SDL_QUIT) {
                         done = SDL_TRUE;
+                    }
+					else if(event.type == SDL_KEYDOWN){
+                        switch(event.key.keysym.sym)
+                        {
+                            case SDLK_UP:
+                            break;
+
+                            case SDLK_DOWN:
+                            break;
+
+                            case SDLK_LEFT:
+							global_step -= 0.05;
+							print = 1;
+                            break;
+
+                            case SDLK_RIGHT:
+							global_step += 0.05;
+							print = 1;
+                            break;
+
+                            default:
+                            break;
+                        }
                     }
                 }
             }
