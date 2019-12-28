@@ -2,15 +2,71 @@
 #include <stdio.h>
 #include <vector>
 #include <chrono>
-#define WINDOW_HEIGTH 1000
-#define WINDOW_WIDTH 1000
+#define WINDOW_HEIGTH 360
+#define WINDOW_WIDTH 480
 
 using namespace std;
 using namespace std::chrono;
 
 struct vec3d
 {
-	float x,y,z;
+	float x,y,z = {0};
+
+	vec3d operator+(const vec3d& a) const
+    {
+		vec3d r;
+		r.x = x + a.x;
+		r.y = y + a.y;
+		r.z = z + a.z;
+        return r;
+    }
+	vec3d operator-(const vec3d& a) const
+	{
+		vec3d r;
+		r.x = x - a.x;
+		r.y = y - a.y;
+		r.z = z - a.z;
+		return r;
+	}
+	vec3d operator+(const float d) const
+	{
+		vec3d r;
+		r.x = x + d;
+		r.y = y + d;
+		r.z = z + d;
+		return r;
+	}
+	vec3d operator*(const float& k) const
+	{
+		vec3d r;
+		r.x = x*k;
+		r.y = y*k;
+		r.z = z*k;
+		return r;
+	}
+	float operator*(const vec3d& a) const
+	{
+		float r = 0;
+		r += x * a.x;
+		r = y * a.y;
+		r = z * a.z;
+		return r;
+	}
+	vec3d operator^(const vec3d& a) const
+	{
+		vec3d r;
+		r.x = y*a.z - z*a.y;
+		r.y = z*a.x - x*a.z;
+		r.z = x*a.y - y*a.x;
+		return r;
+	}
+	float getNorm(){
+		return sqrtf((*this)*(*this));
+	}
+	void normalize(){
+		float norm = this->getNorm();
+		x /= norm; y /= norm; z /= norm;
+	}
 };
 struct triangle
 {
@@ -18,18 +74,18 @@ struct triangle
 };
 struct mesh
 {
-	vector<triangle> trs;
+	vector<triangle> T;
 };
 struct matrix4x4
 {
-	float coef[4][4] = { 0 };
+	float coef[4][4] = {0};
 };
 struct matrix3x3
 {
-	float coef[3][3] = { 0 };
+	float coef[3][3] = {0};
 };
 matrix4x4 projectionMarix;
-
+vec3d CamVec;
 void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
 {
 	float w;
@@ -73,36 +129,22 @@ void projectTriangle(triangle &T, triangle &projT)
 	vecxMatrix(T.d[1], projT.d[1], projectionMarix);
 	vecxMatrix(T.d[2], projT.d[2], projectionMarix);
 }
-void translateTriangle(triangle &T, triangle &transT, float offset){
-	transT.d[0].x = T.d[0].x;
-	transT.d[0].y = T.d[0].y;
-	transT.d[0].z = T.d[0].z + offset;
-	transT.d[1].x = T.d[1].x;
-	transT.d[1].y = T.d[1].y;
-	transT.d[1].z = T.d[1].z + offset;
-	transT.d[2].x = T.d[2].x;
-	transT.d[2].y = T.d[2].y;
-	transT.d[2].z = T.d[2].z + offset;
+void translateTriangle(triangle &T, triangle &transT, float offset)
+{
+	vec3d vOffset = {0,0,offset};
+	for (int i = 0; i<3; i++){
+		transT.d[i] = T.d[i] + vOffset;
+	}
 }
 vec3d getNormal(triangle &T){
 	vec3d normal, line1, line2;
 
-	line1.x = T.d[1].x - T.d[0].x;
-	line1.y = T.d[1].y - T.d[0].y;
-	line1.z = T.d[1].z - T.d[0].z;
+	line1 = T.d[1] - T.d[0];
+	line2 = T.d[2] - T.d[0];
 
-	line2.x = T.d[2].x - T.d[0].x;
-	line2.y = T.d[2].y - T.d[0].y;
-	line2.z = T.d[2].z - T.d[0].z;
-
-	normal.x = line1.y*line2.z - line1.z*line2.y;
-	normal.y = line1.z*line2.x - line1.x*line2.z;
-	normal.z = line1.x*line2.y - line1.y*line2.x;
-
-	float norm = sqrtf(normal.x*normal.x + normal.y*normal.y + normal.z*normal.z);
-
-	normal.x /= norm; normal.y /= norm; normal.z /= norm;
-
+	normal = line1^line2;
+	normal.normalize();
+	
 	return normal;
 }
 void rotateTriangle(triangle &T, triangle &rotatedT, matrix4x4 &mat)
@@ -123,11 +165,6 @@ matrix4x4 createRotationMatrix(float angle, char axis){
 			mat.coef[3][3] = 1;
 			break;
 		case 'y' :
-			mat.coef[0][0] = cos(angle);
-			mat.coef[0][2] = sin(angle);
-			mat.coef[1][1] = 1;
-			mat.coef[2][0] = -sin(angle);
-			mat.coef[2][2] = cos(angle);
 			break;
 		case 'z' :
 			mat.coef[0][0] = cosf(angle);
@@ -145,13 +182,15 @@ void routine(mesh &mesh, SDL_Renderer* renderer, float elapsed_time)
 {
 	matrix4x4 ZRotation = createRotationMatrix(elapsed_time*0.5f, 'z');
 	matrix4x4 XRotation = createRotationMatrix(elapsed_time*0.5f, 'x');
-	for (auto T: mesh.trs){
+	for (auto T: mesh.T){
 		triangle projT, transT, rotatedTX, rotatedTXZ;
 		rotateTriangle(T, rotatedTX, XRotation);
 		rotateTriangle(rotatedTX, rotatedTXZ, ZRotation);
 		translateTriangle(rotatedTXZ, transT, 3.0f);
 		vec3d normal = getNormal(transT);
-		if (normal.z < 0){
+		//if (normal * (transT.d[0] - CamVec) < 0){
+		if (normal.z <  0)
+		{
 			projectTriangle(transT, projT);
 			scaleTriangle(projT);
 			drawTriangle(projT, renderer);
@@ -162,7 +201,7 @@ int main(int argc, char* argv[])
 {
 	auto initial_time = system_clock::now();
 	mesh cube;
-	cube.trs = {
+	cube.T = {
 		// SOUTH
 		{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
 		{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
