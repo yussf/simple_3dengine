@@ -1,6 +1,7 @@
-#include<SDL2/SDL.h>
+ #include<SDL2/SDL.h>
 #include <stdio.h>
 #include <iostream>
+#include <algorithm>
 #include <vector>
 #include <chrono>
 #include <string>
@@ -9,11 +10,28 @@
 #define DEBUG_MODE 0
 using namespace std;
 using namespace std::chrono;
-
+struct pt
+{
+	float x,y = {0};
+};
+struct line
+{
+	float m,b;
+	line(pt p1, pt p2){
+		m = (p1.y - p2.y)/(p1.x - p2.x);
+		b = p1.y - m*p1.x;
+	}
+};
 struct vec3d
 {
 	float x,y,z = {0};
 
+	operator pt() const {
+		pt r;
+		r.x = x;
+		r.y = y;
+		return r;
+	}
 	vec3d operator+(const vec3d& a) const
     {
 		vec3d r;
@@ -105,13 +123,29 @@ void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
 		y.x/=w; y.y/=w; y.z/=w;
 	}
 }
+
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, SDL_Renderer* renderer)
 {
-	
 	SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
 	SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
 	SDL_RenderDrawLine(renderer, x3, y3, x1, y1);
-	
+}
+void fillTriangle(triangle T, SDL_Renderer* renderer)
+{
+	vector<pt> nodes = {(pt)T.d[0], (pt)T.d[1], (pt)T.d[2]};
+	sort(nodes.begin(), nodes.end(), [](pt a, pt b) {
+            return b.y - a.y;
+	});
+
+	line line1 = line(nodes[0],nodes[2]);
+	line line2 = line(nodes[0],nodes[1]);
+	line line3 = line(nodes[0],nodes[3]);
+
+	int scan_heigth = nodes.end()->y - nodes.begin()->y;
+
+	for (int y = nodes.begin()->y; y<nodes.end()->y; y++){
+		
+	}
 }
 void drawTriangle(triangle &T, SDL_Renderer* renderer)
 {
