@@ -1,26 +1,50 @@
- #include<SDL2/SDL.h>
-#include <stdio.h>
+#include <SDL2/SDL.h>
 #include <iostream>
 #include <algorithm>
 #include <vector>
 #include <chrono>
 #include <string>
-#define WINDOW_HEIGTH 360
-#define WINDOW_WIDTH 480
+#define WINDOW_HEIGTH 1000
+#define WINDOW_WIDTH 1000
 #define DEBUG_MODE 0
+#define FG_RATE 100
 using namespace std;
 using namespace std::chrono;
-struct pt
-{
-	float x,y = {0};
-};
+
 struct line
 {
 	float m,b;
-	line(pt p1, pt p2){
-		m = (p1.y - p2.y)/(p1.x - p2.x);
-		b = p1.y - m*p1.x;
+	float x = INFINITY;
+	float getY(float x){
+		return m*x + b;
 	}
+	float getX(float y){
+		if (x != INFINITY) return x;
+		if (m !=0) return (y-b)/m;
+	}
+	string getString(){
+		return "(m="+to_string(m)+", b="+to_string(b)+")";
+	}
+};
+struct pt
+{
+	float x,y = {0};
+	string getString(){
+		return "("+to_string(x)+","+to_string(y)+")";
+	}
+	line operator+(const pt& a){
+		if (x == a.x) return {INFINITY, INFINITY, x};
+		else{
+			float m = (float)(a.y - y)/(float)(a.x - x);
+			float b = y - m*x;
+			return {m,b};
+		}
+	}
+};
+struct color
+{
+	int r,g,b = {255};
+	int a = SDL_ALPHA_OPAQUE;
 };
 struct vec3d
 {
@@ -111,6 +135,7 @@ matrix4x4 projectionMarix;
 vec3d CamVec;
 float global_step;
 int print;
+int s;
 void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
 {
 	float w;
@@ -130,25 +155,33 @@ void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3, SD
 	SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
 	SDL_RenderDrawLine(renderer, x3, y3, x1, y1);
 }
-void fillTriangle(triangle T, SDL_Renderer* renderer)
+void fillTriangle(triangle T, color c, SDL_Renderer* renderer)
 {
+	SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
 	vector<pt> nodes = {(pt)T.d[0], (pt)T.d[1], (pt)T.d[2]};
 	sort(nodes.begin(), nodes.end(), [](pt a, pt b) {
-            return b.y - a.y;
+            return (b.y > a.y);
 	});
 
-	line line1 = line(nodes[0],nodes[2]);
-	line line2 = line(nodes[0],nodes[1]);
-	line line3 = line(nodes[0],nodes[3]);
+	line line1 = nodes[0] + nodes[2];
+	line line2 = nodes[0] + nodes[1];
+	line line3 = nodes[1] + nodes[2];
 
-	int scan_heigth = nodes.end()->y - nodes.begin()->y;
-
-	for (int y = nodes.begin()->y; y<nodes.end()->y; y++){
-		
+	//cout << line1.getString() << "||" << line2.getString() << "||" << line3.getString() << endl;
+	//cout << nodes[0].getString() << "||" << nodes[1].getString() << "||" << nodes[2].getString() << endl;
+	for (int y = nodes[0].y; y<nodes[2].y; y++)
+	{
+		if (y <= nodes[1].y){
+			SDL_RenderDrawLine(renderer, line1.getX(y), y, line2.getX(y), y);
+		}
+		else{
+			SDL_RenderDrawLine(renderer, line1.getX(y), y, line3.getX(y), y);
+		}
 	}
 }
-void drawTriangle(triangle &T, SDL_Renderer* renderer)
+void drawTriangle(triangle &T, color c, SDL_Renderer* renderer)
 {
+	SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
 	drawTriangle(T.d[0].x, T.d[0].y, T.d[1].x, T.d[1].y, T.d[2].x, T.d[2].y, renderer);
 }
 void scaleTriangle(triangle &T)
@@ -219,6 +252,13 @@ matrix4x4 createRotationMatrix(float angle, char axis){
 
 	return mat;
 }
+void routine_debuging(mesh &mesh, SDL_Renderer* renderer){
+	for (auto T : mesh.T){
+		scaleTriangle(T);
+		//drawTriangle(T,renderer);
+		fillTriangle(T,{255,255,0},renderer);
+	}
+}
 void routine(mesh &mesh, SDL_Renderer* renderer, float elapsed_time)
 {
 	matrix4x4 ZRotation = createRotationMatrix(elapsed_time*0.5f, 'z');
@@ -242,12 +282,14 @@ void routine(mesh &mesh, SDL_Renderer* renderer, float elapsed_time)
 		{
 			projectTriangle(transT, projT);
 			scaleTriangle(projT);
-			drawTriangle(projT, renderer);
+			drawTriangle(projT, {0,0,0}, renderer);
+			fillTriangle(projT, {255,255,255}, renderer);
 		}
 	}
 }
 int main(int argc, char* argv[])
 {
+	s = 1;
 	int mode;
 	if (argc > 1){
 		mode = atoi(argv[1]);
@@ -283,6 +325,10 @@ int main(int argc, char* argv[])
 		{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
 	};
 
+	mesh simple_triangle;
+	simple_triangle.T = {
+		{ 0.0f,0.0f,0.0f,	0.0f,0.7f,0.0f,		0.5f,0.8f,0.0f }
+	};
 
 	float fNear = 0.1f;
 	float fFar = 1000.0f;
@@ -303,51 +349,26 @@ int main(int argc, char* argv[])
 
         if (SDL_CreateWindowAndRenderer(WINDOW_WIDTH, WINDOW_HEIGTH, 0, &window, &renderer) == 0) {
             SDL_bool done = SDL_FALSE;
-
             while (!done) {
-                SDL_Event event;
-
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-                SDL_RenderClear(renderer);
-
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-				if (mode == 0){
 				auto current_time = system_clock::now();
-				auto elapsed = duration<float>(current_time - initial_time);
-                routine(cube,renderer,elapsed.count());
-				}else if(mode == 1){
-					routine(cube,renderer,global_step);
+				auto counter = duration<float>(current_time - initial_time);
+				int elapsed = counter.count()*100000;
+				if (elapsed % FG_RATE == 0)
+				{
+					SDL_Event event;
+					SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+					SDL_RenderClear(renderer);
+					SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+					//routine_debuging(simple_triangle,renderer);
+
+					routine(cube,renderer,counter.count());
+					SDL_RenderPresent(renderer);
+					while (SDL_PollEvent(&event)) {
+						if (event.type == SDL_QUIT) {
+							done = SDL_TRUE;
+						}
+					}
 				}
-                SDL_RenderPresent(renderer);
-
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        done = SDL_TRUE;
-                    }
-					else if(event.type == SDL_KEYDOWN){
-                        switch(event.key.keysym.sym)
-                        {
-                            case SDLK_UP:
-                            break;
-
-                            case SDLK_DOWN:
-                            break;
-
-                            case SDLK_LEFT:
-							global_step -= 0.05;
-							print = 1;
-                            break;
-
-                            case SDLK_RIGHT:
-							global_step += 0.05;
-							print = 1;
-                            break;
-
-                            default:
-                            break;
-                        }
-                    }
-                }
             }
         }
 
