@@ -15,6 +15,7 @@ public:
     int window_width        = 800;
     int window_heigth       = 800;
     float coef_reduction    = 0.005;
+    color background        = {0,0,0,1};
     int mode                = 0;
     int step                = 0;
     ~SDL_wrapper()
@@ -58,7 +59,7 @@ public:
             if (int_elapsed % fg_rate == 0)
             {
                 SDL_Event event;
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+                SDL_SetRenderDrawColor(renderer, background.r, background.g, background.b, background.a);
                 SDL_RenderClear(renderer);
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
                 if (mode == 0) on_update(elapsed);
@@ -96,6 +97,15 @@ public:
     {
         set_color(c);
         draw_triangle(T.d[0].x, T.d[0].y, T.d[1].x, T.d[1].y, T.d[2].x, T.d[2].y);
+    }
+    void draw_triangle(triangle &T, color c[3])
+    {
+        set_color(c[0]);
+        draw_line(T.d[0],T.d[2]);
+        set_color(c[1]);
+        draw_line(T.d[0],T.d[1]);
+        set_color(c[2]);
+        draw_line(T.d[1],T.d[2]);
     }
     void fill_triangle(triangle T, color c = {255,255,255})
     {

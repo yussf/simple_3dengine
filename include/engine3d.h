@@ -6,7 +6,7 @@ public:
 	mesh _mesh;
 	vec3d CamVec = {0,0,0};
 	float global_step;
-	
+
 	void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
 	{
 		float w;
@@ -198,4 +198,5 @@ public:
 		}
 		return 0;
 	}
+
 };

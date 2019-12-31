@@ -20,7 +20,7 @@ struct line
 		if (m !=0) return (y-b)/m;
 		return 0;
 	}
-	string getString()
+	operator string() const
 	{
 		return "(m="+to_string(m)+", b="+to_string(b)+")";
 	}
@@ -28,7 +28,7 @@ struct line
 struct pt
 {
 	float x,y = {0};
-	string getString()
+	operator string() const
 	{
 		return "("+to_string(x)+","+to_string(y)+")";
 	}
@@ -48,6 +48,10 @@ struct color
 {
 	int r,g,b = {255};
 	int a = 255;
+	operator string() const
+	{
+		return "("+to_string(r)+","+to_string(g)+","+to_string(b)+","+to_string(a)+")";
+	}
 };
 struct vec3d
 {
@@ -124,7 +128,7 @@ struct vec3d
 		float norm = this->getNorm();
 		x /= norm; y /= norm; z /= norm;
 	}
-	string toString()
+	operator string() const
 	{
 		return "("+to_string(x)+","+to_string(y)+","+to_string(z)+")";
 	}
@@ -132,6 +136,10 @@ struct vec3d
 struct triangle
 {
 	vec3d d[3];
+	operator string() const
+	{
+		return "["+(string)d[0]+","+(string)d[1]+","+(string)d[2]+"]";
+	}
 };
 struct mesh
 {
