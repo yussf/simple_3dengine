@@ -1,10 +1,10 @@
 #include "SDL_wrapper.h"
 class engine3d: public SDL_wrapper
 {
-	
+public:	
 	matrix4x4 projectionMarix = createProjectionMatrix();
 	mesh _mesh;
-	vec3d CamVec;
+	vec3d CamVec = {0,0,0};
 	float global_step;
 	
 	void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
@@ -66,6 +66,10 @@ class engine3d: public SDL_wrapper
 		vecxMatrix(T.d[1], rotatedT.d[1], mat);
 		vecxMatrix(T.d[2], rotatedT.d[2], mat);
 	}
+	void rotateTriangle(triangle &T, triangle &rotatedT, matrix2x2 &mat)
+	{
+		rotatedT = {T.d[0]*mat, T.d[1]*mat, T.d[2]*mat};
+	}
 	matrix4x4 createProjectionMatrix()
 	{
 		matrix4x4 projectionMarix;
@@ -81,6 +85,15 @@ class engine3d: public SDL_wrapper
 		projectionMarix.coef[3][2] 	= -fNear*q;
 		projectionMarix.coef[2][3] 	= 1;
 		return projectionMarix;
+	}
+	matrix2x2 createRotationMatrix(float angle)
+	{
+		matrix2x2 mat;
+		mat.coef[0][0] = cosf(angle);
+		mat.coef[1][1] = cosf(angle);
+		mat.coef[0][1] = -sinf(angle);
+		mat.coef[1][0] = sinf(angle);
+		return mat;
 	}
 	matrix4x4 createRotationMatrix(float angle, char axis)
 	{
@@ -168,7 +181,7 @@ class engine3d: public SDL_wrapper
 	int on_update(int step, float reduction_coef) override
 	{
 		if (mode == 1) on_update(step*reduction_coef);
-		else return 0;
+		return 0;
 	}
 	int on_keydown(SDL_Keycode key) override
 	{
@@ -178,10 +191,11 @@ class engine3d: public SDL_wrapper
 				stepIncrement();
 				break;
 			case SDLK_LEFT 	: 
-				stepDecrement();
+				stepIncrement(-1);
 				break;
 			default:
 				break;
 		}
+		return 0;
 	}
 };

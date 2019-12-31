@@ -14,6 +14,7 @@ public:
     int fg_rate             = 500;
     int window_width        = 800;
     int window_heigth       = 800;
+    float coef_reduction    = 0.005;
     int mode                = 0;
     int step                = 0;
     ~SDL_wrapper()
@@ -29,7 +30,7 @@ public:
 
         if (SDL_Init(SDL_INIT_VIDEO) == 0)
         {
-            if (SDL_CreateWindowAndRenderer(window_width, window_heigth, 0, &window, &renderer) == 0)
+            if (SDL_CreateWindowAndRenderer(window_width, window_heigth, SDL_WINDOW_RESIZABLE, &window, &renderer) == 0)
             {
                 done            = SDL_FALSE;
                 return 0;
@@ -61,23 +62,21 @@ public:
                 SDL_RenderClear(renderer);
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
                 if (mode == 0) on_update(elapsed);
-                if (mode == 1) on_update(step,0.2f);
+                if (mode == 1) on_update(step,coef_reduction);
                 SDL_RenderPresent(renderer);
                 while (SDL_PollEvent(&event))
                 {
                     if (event.type == SDL_QUIT) done = SDL_TRUE;
                     else if(event.type == SDL_KEYDOWN) on_keydown(event.key.keysym.sym);
+                    else if((event.type == SDL_WINDOWEVENT)
+                            & (event.window.event == SDL_WINDOWEVENT_RESIZED)) on_resize();
                 }
             }
         }
     }
-    void stepIncrement()
+    void stepIncrement(int i = 1)
     {
-        step++;
-    }
-    void stepDecrement()
-    {
-        step--;
+        step += i;
     }
     void set_color(color c)
     {
@@ -93,12 +92,12 @@ public:
         SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
         SDL_RenderDrawLine(renderer, x3, y3, x1, y1);
     }
-    void draw_triangle(triangle &T, color c)
+    void draw_triangle(triangle &T, color c = {255,255,255})
     {
         set_color(c);
         draw_triangle(T.d[0].x, T.d[0].y, T.d[1].x, T.d[1].y, T.d[2].x, T.d[2].y);
     }
-    void fill_triangle(triangle T, color c)
+    void fill_triangle(triangle T, color c = {255,255,255})
     {
         SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
         vector<pt> nodes = {(pt)T.d[0], (pt)T.d[1], (pt)T.d[2]};
@@ -132,6 +131,14 @@ public:
     int get_Wwidth()
     {
         return window_width;
+    }
+    void update_window_size(){
+        SDL_GetWindowSize(window, &window_width, &window_heigth);
+    }
+    int on_resize(){
+        update_window_size();
+        if (mode == 1) on_update(step,0.2f);
+        return 0;
     }
     virtual int on_create()                                         = 0;
     virtual int on_update(float elapsed)                            = 0;

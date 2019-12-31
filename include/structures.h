@@ -2,7 +2,10 @@
 #include <string>
 #include <vector>
 using namespace std;
-
+struct matrix2x2
+{
+	float coef[2][2] = {0};
+};
 struct line
 {
 	float m,b;
@@ -39,6 +42,7 @@ struct pt
 			return {m,b};
 		}
 	}
+
 };
 struct color
 {
@@ -94,6 +98,13 @@ struct vec3d
 		r += x * a.x;
 		r += y * a.y;
 		r += z * a.z;
+		return r;
+	}
+	vec3d operator*(const matrix2x2& mat)
+	{	
+		vec3d r;
+		r.x = mat.coef[0][0]*x + mat.coef[0][1]*y;
+		r.y = mat.coef[1][0]*x + mat.coef[1][1]*y;
 		return r;
 	}
 	vec3d operator^(const vec3d& a) const
