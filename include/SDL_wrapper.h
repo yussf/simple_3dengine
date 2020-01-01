@@ -15,7 +15,7 @@ public:
     int window_width        = 800;
     int window_heigth       = 800;
     float coef_reduction    = 0.005;
-    rgb background        = {0,0,0,1};
+    rgb background        = {0,0,0,255};
     int mode                = 0;
     int step                = 0;
     ~SDL_wrapper()
@@ -33,7 +33,7 @@ public:
         {
             if (SDL_CreateWindowAndRenderer(window_width, window_heigth, SDL_WINDOW_RESIZABLE, &window, &renderer) == 0)
             {
-                done            = SDL_FALSE;
+                done = SDL_FALSE;
                 return 0;
             }else
             {
@@ -67,8 +67,8 @@ public:
                 SDL_RenderPresent(renderer);
                 while (SDL_PollEvent(&event))
                 {
-                    if (event.type == SDL_QUIT) done = SDL_TRUE;
-                    else if(event.type == SDL_KEYDOWN) on_keydown(event.key.keysym.sym);
+                    if (event.type      == SDL_QUIT) done = SDL_TRUE;
+                    else if(event.type  == SDL_KEYDOWN) on_keydown(event.key.keysym.sym);
                     else if((event.type == SDL_WINDOWEVENT)
                             & (event.window.event == SDL_WINDOWEVENT_RESIZED)) on_resize();
                 }
@@ -113,7 +113,7 @@ public:
     }
     void fill_triangle(triangle &T, rgb c)
     {
-        SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
+        SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, SDL_ALPHA_OPAQUE);
         vector<pt> nodes = {(pt)T.d[0], (pt)T.d[1], (pt)T.d[2]};
         sort(nodes.begin(), nodes.end(), [](pt a, pt b)
         {
@@ -127,7 +127,7 @@ public:
         //cout << line1.getString() << "||" << line2.getString() << "||" << line3.getString() << endl;
         //cout << nodes[0].getString() << "||" << nodes[1].getString() << "||" << nodes[2].getString() << endl;
 
-        for (int y = nodes[0].y+1; y<nodes[2].y-1; y++)
+        for (int y = nodes[0].y+1; y<nodes[2].y; y++)
         {
             if (y <= nodes[1].y)
             {
@@ -159,7 +159,7 @@ public:
     }
     int on_resize(){
         update_window_size();
-        if (mode == 1) on_update(step,0.2f);
+        //if (mode == 1) on_update(step, coef_reduction);
         return 0;
     }
     virtual int on_create()                                         = 0;

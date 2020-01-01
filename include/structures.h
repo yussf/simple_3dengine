@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cmath>
 #define MIN(a, b) (((a) > (b)) ? (b) : (a))
 using namespace std;
 struct matrix2x2
@@ -70,7 +71,7 @@ struct rgb
 		return res;
 	}
 };
-// intended for better control over the luminance of an rgb color
+// intended for better control over the luminance of rgb colors
 // not used yet
 struct hsl
 {
@@ -164,6 +165,7 @@ struct triangle
 {
 	vec3d d[3];
 	rgb color = {255,255,255,100};
+	float L = 1;
 	operator string() const
 	{
 		return "["+(string)d[0]+","+(string)d[1]+","+(string)d[2]+"]";

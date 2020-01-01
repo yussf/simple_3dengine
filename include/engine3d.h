@@ -11,6 +11,7 @@ public:
 	vec3d CamVec 				= {0.0f,0.0f,0.0f};
 	vec3d light_source 			= {0.0f,0.0f,-1.0f};
 	float coef_translation		= 3.0f;
+	bool draw_edges				= 0;
 	
 	void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
 	{
@@ -167,21 +168,34 @@ public:
 	{
 		matrix4x4 ZRotation = createRotationMatrix(elapsed_time*0.5f, 'z');
 		matrix4x4 XRotation = createRotationMatrix(elapsed_time*0.5f, 'x');
+		matrix4x4 YRotation = createRotationMatrix(elapsed_time*0.5f, 'y');
+		vector<triangle> visibleTriangles;
 		for (auto T : _mesh.T)
 		{
-			triangle projT, transT, rotatedTX, rotatedTXZ;
+			triangle projT, transT, rotatedTX, rotatedTXZ, rotatedTXZY;
 			rotateTriangle(T, rotatedTX, XRotation);
 			rotateTriangle(rotatedTX, rotatedTXZ, ZRotation);
-			translateTriangle(rotatedTXZ, transT, coef_translation);
+			rotateTriangle(rotatedTXZ, rotatedTXZY, YRotation);
+			translateTriangle(rotatedTXZY, transT, coef_translation);
 			vec3d normal = getNormal(transT);
 			if (normal * (transT.d[0] - CamVec) < 0)
 			{
 				projectTriangle(transT, projT);
 				scaleTriangle(projT);
 				float L = abs(light_source*normal);
-				draw_triangle(projT);
-				fill_triangle(projT,L);
+				projT.L = L;
+				visibleTriangles.push_back(projT);
 			}
+		}
+		sort(visibleTriangles.begin(), visibleTriangles.end(), [](triangle &A, triangle &B){
+			float za = A.d[0].z + A.d[1].z + A.d[2].z ;
+			float zb = B.d[0].z + B.d[1].z + B.d[2].z ;
+			return za > zb;
+		});
+		
+		for (triangle T : visibleTriangles){
+			if (draw_edges) draw_triangle(T);
+			fill_triangle(T,T.L);
 		}
 		return 0;
 	}
