@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#define MIN(a, b) (((a) > (b)) ? (b) : (a))
 using namespace std;
 struct matrix2x2
 {
@@ -44,13 +45,39 @@ struct pt
 	}
 
 };
-struct color
+struct rgb
 {
 	int r,g,b = {255};
-	int a = 255;
+	int a = 1;
 	operator string() const
 	{
-		return "("+to_string(r)+","+to_string(g)+","+to_string(b)+","+to_string(a)+")";
+		return "(rgb  : "+to_string(r)+","+to_string(g)+","+to_string(b)+","+to_string(a)+")";
+	}
+	rgb operator*(const float& k) const
+	{
+		rgb res;
+		res.r = MIN(255,r*k);
+		res.g = MIN(255,g*k);
+		res.b = MIN(255,b*k);
+		return res;
+	}
+	rgb operator+(const float& k) const
+	{
+		rgb res;
+		res.r = MIN(255,r+k);
+		res.g = MIN(255,g+k);
+		res.b = MIN(255,b+k);
+		return res;
+	}
+};
+// intended for better control over the luminance of an rgb color
+// not used yet
+struct hsl
+{
+	int h,s,l = {0};
+	operator string() const
+	{
+		return "(hsl : "+to_string(h)+","+to_string(s)+","+to_string(l)+")";
 	}
 };
 struct vec3d
@@ -136,6 +163,7 @@ struct vec3d
 struct triangle
 {
 	vec3d d[3];
+	rgb color = {255,255,255,100};
 	operator string() const
 	{
 		return "["+(string)d[0]+","+(string)d[1]+","+(string)d[2]+"]";

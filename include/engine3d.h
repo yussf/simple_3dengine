@@ -1,12 +1,17 @@
 #include "SDL_wrapper.h"
+#include <fstream>
+#include <sstream>
+#include <vector>
 class engine3d: public SDL_wrapper
 {
 public:	
-	matrix4x4 projectionMarix = createProjectionMatrix();
-	mesh _mesh;
-	vec3d CamVec = {0,0,0};
 	float global_step;
-
+	mesh _mesh;
+	matrix4x4 projectionMarix 	= createProjectionMatrix();
+	vec3d CamVec 				= {0.0f,0.0f,0.0f};
+	vec3d light_source 			= {0.0f,0.0f,-1.0f};
+	float coef_translation		= 3.0f;
+	
 	void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
 	{
 		float w;
@@ -27,12 +32,12 @@ public:
 		T.d[1].x += 1.0f; T.d[1].y += 1.0f;
 		T.d[2].x += 1.0f; T.d[2].y += 1.0f;
 
-		T.d[0].x *= 0.5*this->get_Wwidth();
-		T.d[0].y *= 0.5*this->get_Wheigth();
-		T.d[1].x *= 0.5*this->get_Wwidth();
-		T.d[1].y *= 0.5*this->get_Wheigth();
-		T.d[2].x *= 0.5*this->get_Wwidth();
-		T.d[2].y *= 0.5*this->get_Wheigth();
+		T.d[0].x *= 0.5*get_Wwidth();
+		T.d[0].y *= 0.5*get_Wheigth();
+		T.d[1].x *= 0.5*get_Wwidth();
+		T.d[1].y *= 0.5*get_Wheigth();
+		T.d[2].x *= 0.5*get_Wwidth();
+		T.d[2].y *= 0.5*get_Wheigth();
 	}
 	void projectTriangle(triangle &T, triangle &projT)
 	{
@@ -126,36 +131,37 @@ public:
 		}
 		return mat;
 	}
+	void load_mesh(string path)
+	{
+		mesh res;
+		ifstream file_in(path);
+		vector<vec3d> vertices;
+		string indicator, a, b, c;
+		for (string line; getline(file_in, line);){
+			stringstream sstream(line);
+			sstream >> indicator >> a >> b >> c;
+
+			//useful for debugging 
+			//cout << indicator << " | " << a << " | " << b << " | " << c << endl;
+			
+			if (indicator == "v")
+			{
+				vec3d p = {stof(a), stof(b), stof(c)};
+				vertices.push_back(p);
+
+			}else if(indicator == "f")
+			{
+				int v[3] = {stoi(a), stoi(b), stoi(c)};
+				triangle T = {vertices[v[0] - 1],vertices[v[1] - 1],vertices[v[2] - 1]};
+				res.T.push_back(T);
+			}
+		}
+		_mesh = res;
+	}
 	int on_create() override 
 	{
-		
-		_mesh.T = {
-			// SOUTH
-			{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
-
-			// EAST                                                      
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
-
-			// NORTH                                                     
-			{ 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
-
-			// WEST                                                      
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-			{ 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
-
-			// TOP                                                       
-			{ 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-			{ 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
-
-			// BOTTOM                                                    
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-			{ 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
-		};
-		return 0;
-		
+		load_mesh("objs/cube.obj");
+		return 0;	
 	}
 	int on_update(float elapsed_time) override
 	{
@@ -166,14 +172,15 @@ public:
 			triangle projT, transT, rotatedTX, rotatedTXZ;
 			rotateTriangle(T, rotatedTX, XRotation);
 			rotateTriangle(rotatedTX, rotatedTXZ, ZRotation);
-			translateTriangle(rotatedTXZ, transT, 3.0f);
+			translateTriangle(rotatedTXZ, transT, coef_translation);
 			vec3d normal = getNormal(transT);
 			if (normal * (transT.d[0] - CamVec) < 0)
 			{
 				projectTriangle(transT, projT);
 				scaleTriangle(projT);
-				draw_triangle(projT, {255,0,0});
-				fill_triangle(projT, {255,255,255});
+				float L = abs(light_source*normal);
+				draw_triangle(projT);
+				fill_triangle(projT,L);
 			}
 		}
 		return 0;

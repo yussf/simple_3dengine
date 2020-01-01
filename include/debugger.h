@@ -2,7 +2,7 @@
 class fillTriangleDebugger : public engine3d
 {
 	mesh mesh_history;
-	color cmap_3[3] = {{255,0,0},{0,255,0},{0,0,255}};
+	rgb cmap_3[3] = {{255,0,0},{0,255,0},{0,0,255}};
 	void check_state()
 	{
 		for (auto T : mesh_history.T)

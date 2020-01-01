@@ -12,12 +12,14 @@ int main(int argc, char* argv[])
 	int mode;
 	if (argc > 1) mode = atoi(argv[1]);
 
-	/*engine3d demo;
-
-	if(!demo.init(mode)) demo.start();
-	*/
-
-	fillTriangleDebugger debugger;
-	if(!debugger.init(mode)) debugger.start();
+	engine3d instance3d;
+	instance3d.coef_reduction = 0.01;
+	instance3d.coef_translation = 8;
+	if(!instance3d.init(mode)){
+		instance3d.load_mesh("objs/teapot.obj");
+		instance3d.start();
+	}
+	/*fillTriangleDebugger debugger;
+	if(!debugger.init(mode)) debugger.start();*/
     return 0;
 }

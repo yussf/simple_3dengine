@@ -15,7 +15,7 @@ public:
     int window_width        = 800;
     int window_heigth       = 800;
     float coef_reduction    = 0.005;
-    color background        = {0,0,0,1};
+    rgb background        = {0,0,0,1};
     int mode                = 0;
     int step                = 0;
     ~SDL_wrapper()
@@ -79,7 +79,7 @@ public:
     {
         step += i;
     }
-    void set_color(color c)
+    void set_rgb(rgb c)
     {
         SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
     }
@@ -93,21 +93,25 @@ public:
         SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
         SDL_RenderDrawLine(renderer, x3, y3, x1, y1);
     }
-    void draw_triangle(triangle &T, color c = {255,255,255})
+    void draw_triangle(triangle &T, rgb c)
     {
-        set_color(c);
+        set_rgb(c);
         draw_triangle(T.d[0].x, T.d[0].y, T.d[1].x, T.d[1].y, T.d[2].x, T.d[2].y);
     }
-    void draw_triangle(triangle &T, color c[3])
+    void draw_triangle(triangle &T)
     {
-        set_color(c[0]);
+        draw_triangle(T,T.color);
+    }
+    void draw_triangle(triangle &T, rgb c[3])
+    {
+        set_rgb(c[0]);
         draw_line(T.d[0],T.d[2]);
-        set_color(c[1]);
+        set_rgb(c[1]);
         draw_line(T.d[0],T.d[1]);
-        set_color(c[2]);
+        set_rgb(c[2]);
         draw_line(T.d[1],T.d[2]);
     }
-    void fill_triangle(triangle T, color c = {255,255,255})
+    void fill_triangle(triangle &T, rgb c)
     {
         SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
         vector<pt> nodes = {(pt)T.d[0], (pt)T.d[1], (pt)T.d[2]};
@@ -133,6 +137,14 @@ public:
                 SDL_RenderDrawLine(renderer, line1.getX(y), y, line3.getX(y), y);
             }
         }
+    }
+    void fill_triangle(triangle &T)
+    {
+        fill_triangle(T,T.color);
+    }
+    void fill_triangle(triangle &T, float L)
+    {
+        fill_triangle(T,T.color*L);
     }
     int get_Wheigth()
     {

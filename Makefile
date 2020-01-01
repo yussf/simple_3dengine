@@ -11,7 +11,7 @@ main:
 	$(CC) $(SOURCE_DIR)/main.cpp $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $(BINARY_DIR)/main
 
 run:
-	$(BINARY_DIR)/main 1
+	$(BINARY_DIR)/main 0
 
 clean:
 	rm -f $(BINARY_DIR)/main
