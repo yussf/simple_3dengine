@@ -41,7 +41,7 @@ class fillTriangleDebugger : public engine3d
 		}
 		return 0;
 	}
-	int on_keydown(SDL_Keycode key) override
+	int on_keydown(SDL_Keycode key, float elapsed) override
 	{
 		//keep super on_keydown()
 		engine3d::on_keydown(key);

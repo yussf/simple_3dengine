@@ -108,6 +108,14 @@ struct vec3d
 		r.z = z - a.z;
 		return r;
 	}
+	void operator+=(const vec3d& a)
+	{
+		*this = *this + a;
+	}
+	void operator-=(const vec3d& a)
+	{
+		*this = *this - a;
+	}
 	vec3d operator+(const float d) const
 	{
 		vec3d r;

@@ -67,7 +67,7 @@ public:
                 while (SDL_PollEvent(&event))
                 {
                     if     (event.type  == SDL_QUIT) done = SDL_TRUE;
-                    else if(event.type  == SDL_KEYDOWN) on_keydown(event.key.keysym.sym);
+                    else if(event.type  == SDL_KEYDOWN) on_keydown(event.key.keysym.sym, elapsed);
                     else if(event.type  == SDL_MOUSEWHEEL) on_mouse(event.wheel.y);
                     else if((event.type == SDL_WINDOWEVENT)
                             & (event.window.event == SDL_WINDOWEVENT_RESIZED)) on_resize();
@@ -169,6 +169,6 @@ public:
     virtual int on_create()                                         = 0;
     virtual int on_update(float elapsed)                            = 0;
     virtual int on_update(int step, float reduction_coef)           = 0;
-    virtual int on_keydown(SDL_Keycode key)                         = 0;
+    virtual int on_keydown(SDL_Keycode key, float elapsed)          = 0;
     virtual int on_mouse(Sint32 mousekey)                           = 0;
 };

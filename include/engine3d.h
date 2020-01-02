@@ -12,10 +12,14 @@ public:
 	vec3d dir_vec				= {0.0f,0.0f,1.0f};
 	vec3d up_vec				= {0.0f,1.0f,0.0f};
 	vec3d light_source 			= {0.0f,0.0f,-1.0f};
+	vec3d dforward_vec			= {0.0f,0.0f,-1.0f};
 	float coef_translation		= 3.0f;
 	float dcam_const			= 0.5f;
 	float min_L					= 0.2f;
-	bool draw_edges				= 0;
+	bool draw_edges				= 0.0f;
+	float yaw					= 0.0f;
+	float dyaw					= 0.5f;
+	float velocity				= 5.0f;
 	
 	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
 	{
@@ -201,11 +205,14 @@ public:
 		matrix4x4 XRotation 	= createRotationMatrix(elapsed_time*0.5f, 'x');
 		matrix4x4 YRotation 	= createRotationMatrix(elapsed_time*0.5f, 'y');
 		matrix4x4 ZRotation 	= createRotationMatrix(elapsed_time*0.5f, 'z');
+		matrix4x4 yawMatrix		= createRotationMatrix(yaw,'y');
 		matrix4x4 worldMatrix 	= XRotation*YRotation*ZRotation;
 		worldMatrix 			= createEyeMatrix();
 		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
-		vec3d target_vec 		= eye_vec + dir_vec;
-		matrix4x4 viewMatrix = createLookAtMatrix(eye_vec,target_vec,up_vec);
+		vec3d target_vec 		= {0.0f,0.0f,1.0f};
+		dir_vec 				= vecxMatrix(target_vec,yawMatrix);
+		target_vec				= eye_vec + dir_vec;
+		matrix4x4 viewMatrix 	= createLookAtMatrix(eye_vec,target_vec,up_vec);
 		vector<triangle> visibleTriangles;
 
 		for (auto T : _mesh.T)
@@ -213,11 +220,12 @@ public:
 			triangle projT, worldT, viewT;
 			//world transformation
 			worldT = transformTriangle(T,worldMatrix,offset_vec);
-			viewT = transformTriangle(worldT, viewMatrix);
+			
 			//projection transform
-			vec3d normal = getNormal(viewT);
-			if (normal * (viewT.d[1] - eye_vec) < 0)
+			vec3d normal = getNormal(worldT);
+			if (normal * (worldT.d[1] - eye_vec) < 0)
 			{
+				viewT = transformTriangle(worldT, viewMatrix);
 				projT = transformTriangle(viewT, projectionMarix);
 				scaleTriangle(projT);
 				float L = abs(light_source*normal);
@@ -243,7 +251,7 @@ public:
 		if (mode == 1) on_update(step*reduction_coef);
 		return 0;
 	}
-	int on_keydown(SDL_Keycode key) override
+	int on_keydown(SDL_Keycode key, float elapsed) override
 	{
 		switch(key)
 		{
@@ -251,15 +259,29 @@ public:
 				eye_vec.x += dcam_const;
 				break;
 			case SDLK_LEFT 	: 
-				eye_vec.x -= dcam_const;
+				eye_vec.x -= dcam_const;;
 				break;
 			case SDLK_UP	:
 				eye_vec.y -= dcam_const;
 				break;
 			case SDLK_DOWN	:
 				eye_vec.y += dcam_const;
+				break;
+			case SDLK_q :
+				yaw += dyaw;
+				break;
+			case SDLK_d :
+				yaw -= dyaw;
+				break;
+			case SDLK_z :
+				eye_vec = eye_vec + dir_vec*velocity;
+				break;
+			case SDLK_s	:
+				eye_vec = eye_vec - dir_vec*velocity;
+				break;
 			default:
 				break;
+			
 		}
 		return 0;
 	}
