@@ -49,7 +49,7 @@ struct pt
 struct rgb
 {
 	int r,g,b = {255};
-	int a = 1;
+	int a = 255;
 	operator string() const
 	{
 		return "(rgb  : "+to_string(r)+","+to_string(g)+","+to_string(b)+","+to_string(a)+")";
@@ -164,7 +164,7 @@ struct vec3d
 struct triangle
 {
 	vec3d d[3];
-	rgb color = {255,255,255,100};
+	rgb color = {255,255,255,255};
 	float L = 1;
 	operator string() const
 	{
@@ -178,6 +178,18 @@ struct mesh
 struct matrix4x4
 {
 	float coef[4][4] = {0};
+	matrix4x4 operator*(const matrix4x4 &mat) const
+	{
+		matrix4x4 res;
+		for(int i=0;i<4;i++)	
+		{
+			for (int j=0;j<4;j++)
+			{
+				for (int k=0;k<4;k++) res.coef[i][j] += coef[i][k]*mat.coef[k][j];
+			}
+		}
+		return res;
+	}
 };
 struct matrix3x3
 {

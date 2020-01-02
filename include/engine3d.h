@@ -8,13 +8,18 @@ public:
 	float global_step;
 	mesh _mesh;
 	matrix4x4 projectionMarix 	= createProjectionMatrix();
-	vec3d CamVec 				= {0.0f,0.0f,0.0f};
+	vec3d eye_vec 				= {0.0f,0.0f,0.0f};
+	vec3d dir_vec				= {0.0f,0.0f,1.0f};
+	vec3d up_vec				= {0.0f,1.0f,0.0f};
 	vec3d light_source 			= {0.0f,0.0f,-1.0f};
 	float coef_translation		= 3.0f;
+	float dcam_const			= 0.5f;
+	float min_L					= 0.2f;
 	bool draw_edges				= 0;
 	
-	void vecxMatrix(vec3d &x, vec3d &y, matrix4x4 &p)
+	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
 	{
+		vec3d y;
 		float w;
 		y.x = x.x*p.coef[0][0] + x.y*p.coef[1][0] + x.z*p.coef[2][0] + p.coef[3][0];
 		y.y = x.x*p.coef[0][1] + x.y*p.coef[1][1] + x.z*p.coef[2][1] + p.coef[3][1];
@@ -26,6 +31,7 @@ public:
 			y.y /= w;
 			y.z /= w;
 		}
+		return y;
 	}
 	void scaleTriangle(triangle &T)
 	{
@@ -40,19 +46,13 @@ public:
 		T.d[2].x *= 0.5*get_Wwidth();
 		T.d[2].y *= 0.5*get_Wheigth();
 	}
-	void projectTriangle(triangle &T, triangle &projT)
+	triangle transformTriangle(triangle &T, matrix4x4 &P, vec3d b = {0,0,0})
 	{
-		vecxMatrix(T.d[0], projT.d[0], projectionMarix);
-		vecxMatrix(T.d[1], projT.d[1], projectionMarix);
-		vecxMatrix(T.d[2], projT.d[2], projectionMarix);
-	}
-	void translateTriangle(triangle &T, triangle &transT, float offset)
-	{
-		vec3d vOffset = {0,0,offset};
-		for (int i = 0; i<3; i++)
-		{
-			transT.d[i] = T.d[i] + vOffset;
-		}
+		triangle transfromedT;
+		transfromedT.d[0] = vecxMatrix(T.d[0], P) + b;
+		transfromedT.d[1] = vecxMatrix(T.d[1], P) + b;
+		transfromedT.d[2] = vecxMatrix(T.d[2], P) + b;
+		return transfromedT;
 	}
 	vec3d getNormal(triangle &T)
 	{
@@ -65,12 +65,6 @@ public:
 		normal.normalize();
 		
 		return normal;
-	}
-	void rotateTriangle(triangle &T, triangle &rotatedT, matrix4x4 &mat)
-	{
-		vecxMatrix(T.d[0], rotatedT.d[0], mat);
-		vecxMatrix(T.d[1], rotatedT.d[1], mat);
-		vecxMatrix(T.d[2], rotatedT.d[2], mat);
 	}
 	void rotateTriangle(triangle &T, triangle &rotatedT, matrix2x2 &mat)
 	{
@@ -108,29 +102,67 @@ public:
 			case 'x' :
 				mat.coef[0][0] = 1;
 				mat.coef[1][1] = cosf(angle);
-				mat.coef[1][2] = sinf(angle);
-				mat.coef[2][1] = -sinf(angle);
+				mat.coef[1][2] = -sinf(angle);
+				mat.coef[2][1] = sinf(angle);
 				mat.coef[2][2] = cosf(angle);
 				mat.coef[3][3] = 1;
 				break;
 			case 'y' :
 				mat.coef[0][0] = cosf(angle);
 				mat.coef[1][1] = 1;
-				mat.coef[0][2] = -sinf(angle);
-				mat.coef[2][0] = sinf(angle);
+				mat.coef[0][2] = sinf(angle);
+				mat.coef[2][0] = -sinf(angle);
 				mat.coef[2][2] = cosf(angle);
 				mat.coef[3][3] = 1;
 				break;
 			case 'z' :
 				mat.coef[0][0] = cosf(angle);
-				mat.coef[0][1] = sinf(angle);
-				mat.coef[1][0] = -sinf(angle);
+				mat.coef[0][1] = -sinf(angle);
+				mat.coef[1][0] = sinf(angle);
 				mat.coef[1][1] = cosf(angle);
 				mat.coef[2][2] = 1;
 				mat.coef[3][3] = 1;
 				break;
 		}
 		return mat;
+	}
+	matrix4x4 createEyeMatrix(){
+		matrix4x4 mat;
+		mat.coef[0][0] = 1.0f;
+		mat.coef[1][1] = 1.0f;
+		mat.coef[2][2] = 1.0f;
+		mat.coef[3][3] = 1.0f;
+		return mat;
+	}
+	matrix4x4 createLookAtMatrix(vec3d &eye, vec3d &target, vec3d &up)
+	{
+		vec3d zaxis = target - eye;
+		zaxis.normalize();
+		vec3d xaxis = up ^ zaxis;
+		xaxis.normalize();
+		vec3d yaxis = zaxis ^ xaxis;
+		matrix4x4 viewMatrix{{	
+				{xaxis.x,		yaxis.x,		zaxis.x,		0},
+				{xaxis.y,		yaxis.y,		zaxis.y,		0},
+				{xaxis.z,		yaxis.z,		zaxis.z,		0},
+				{-(xaxis*eye),	-(yaxis*eye),	-(zaxis*eye),	1}
+			}};
+		return viewMatrix;
+	}
+	matrix4x4 createPointAtMatrix(vec3d &eye, vec3d &target, vec3d &up)
+	{
+		vec3d zaxis = eye - target;
+		zaxis.normalize();
+		vec3d xaxis = up ^ zaxis;
+		xaxis.normalize();
+		vec3d yaxis = zaxis ^ xaxis;
+		matrix4x4 camMatrix{{	
+				{xaxis.x,		xaxis.y,		xaxis.z,		0},
+				{yaxis.x,		yaxis.y,		yaxis.z,		0},
+				{zaxis.x,		zaxis.y,		zaxis.z,		0},
+				{eye.x,			eye.y,			eye.z,			1}
+			}};
+		return camMatrix;
 	}
 	void load_mesh(string path)
 	{
@@ -147,7 +179,7 @@ public:
 			
 			if (indicator == "v")
 			{
-				vec3d p = {stof(a), stof(b), stof(c)};
+				vec3d p = {-stof(a), -stof(b), stof(c)};
 				vertices.push_back(p);
 
 			}else if(indicator == "f")
@@ -166,24 +198,30 @@ public:
 	}
 	int on_update(float elapsed_time) override
 	{
-		matrix4x4 ZRotation = createRotationMatrix(elapsed_time*0.5f, 'z');
-		matrix4x4 XRotation = createRotationMatrix(elapsed_time*0.5f, 'x');
-		matrix4x4 YRotation = createRotationMatrix(elapsed_time*0.5f, 'y');
+		matrix4x4 XRotation 	= createRotationMatrix(elapsed_time*0.5f, 'x');
+		matrix4x4 YRotation 	= createRotationMatrix(elapsed_time*0.5f, 'y');
+		matrix4x4 ZRotation 	= createRotationMatrix(elapsed_time*0.5f, 'z');
+		matrix4x4 worldMatrix 	= XRotation*YRotation*ZRotation;
+		worldMatrix 			= createEyeMatrix();
+		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
+		vec3d target_vec 		= eye_vec + dir_vec;
+		matrix4x4 viewMatrix = createLookAtMatrix(eye_vec,target_vec,up_vec);
 		vector<triangle> visibleTriangles;
+
 		for (auto T : _mesh.T)
 		{
-			triangle projT, transT, rotatedTX, rotatedTXZ, rotatedTXZY;
-			rotateTriangle(T, rotatedTX, XRotation);
-			rotateTriangle(rotatedTX, rotatedTXZ, ZRotation);
-			rotateTriangle(rotatedTXZ, rotatedTXZY, YRotation);
-			translateTriangle(rotatedTXZY, transT, coef_translation);
-			vec3d normal = getNormal(transT);
-			if (normal * (transT.d[0] - CamVec) < 0)
+			triangle projT, worldT, viewT;
+			//world transformation
+			worldT = transformTriangle(T,worldMatrix,offset_vec);
+			viewT = transformTriangle(worldT, viewMatrix);
+			//projection transform
+			vec3d normal = getNormal(viewT);
+			if (normal * (viewT.d[1] - eye_vec) < 0)
 			{
-				projectTriangle(transT, projT);
+				projT = transformTriangle(viewT, projectionMarix);
 				scaleTriangle(projT);
 				float L = abs(light_source*normal);
-				projT.L = L;
+				projT.L = L + min_L;
 				visibleTriangles.push_back(projT);
 			}
 		}
@@ -196,6 +234,7 @@ public:
 		for (triangle T : visibleTriangles){
 			if (draw_edges) draw_triangle(T);
 			fill_triangle(T,T.L);
+			//cout << (string)T.color << endl;
 		}
 		return 0;
 	}
@@ -209,13 +248,29 @@ public:
 		switch(key)
 		{
 			case SDLK_RIGHT : 
-				stepIncrement();
+				eye_vec.x += dcam_const;
 				break;
 			case SDLK_LEFT 	: 
-				stepIncrement(-1);
+				eye_vec.x -= dcam_const;
 				break;
+			case SDLK_UP	:
+				eye_vec.y -= dcam_const;
+				break;
+			case SDLK_DOWN	:
+				eye_vec.y += dcam_const;
 			default:
 				break;
+		}
+		return 0;
+	}
+	int on_mouse(Sint32 y) override
+	{
+		if (y > 0)
+		{
+			eye_vec.z += dcam_const;
+		}else if (y < 0)
+		{
+			eye_vec.z -= dcam_const;
 		}
 		return 0;
 	}

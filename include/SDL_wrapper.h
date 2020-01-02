@@ -59,16 +59,16 @@ public:
             if (int_elapsed % fg_rate == 0)
             {
                 SDL_Event event;
-                SDL_SetRenderDrawColor(renderer, background.r, background.g, background.b, background.a);
+                set_rgb(background);
                 SDL_RenderClear(renderer);
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
                 if (mode == 0) on_update(elapsed);
                 if (mode == 1) on_update(step,coef_reduction);
                 SDL_RenderPresent(renderer);
                 while (SDL_PollEvent(&event))
                 {
-                    if (event.type      == SDL_QUIT) done = SDL_TRUE;
+                    if     (event.type  == SDL_QUIT) done = SDL_TRUE;
                     else if(event.type  == SDL_KEYDOWN) on_keydown(event.key.keysym.sym);
+                    else if(event.type  == SDL_MOUSEWHEEL) on_mouse(event.wheel.y);
                     else if((event.type == SDL_WINDOWEVENT)
                             & (event.window.event == SDL_WINDOWEVENT_RESIZED)) on_resize();
                 }
@@ -83,15 +83,19 @@ public:
     {
         SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, c.a);
     }
+    void draw_line(float x1, float y1, float x2, float y2)
+    {
+        SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+    }
     void draw_line(pt a, pt b)
     {
-        SDL_RenderDrawLine(renderer, a.x, a.y, b.x, b.y);
+        draw_line(a.x, a.y, b.x, b.y);
     }
     void draw_triangle(float x1, float y1, float x2, float y2, float x3, float y3)
     {
-        SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
-        SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
-        SDL_RenderDrawLine(renderer, x3, y3, x1, y1);
+        draw_line(x1, y1, x2, y2);
+        draw_line(x2, y2, x3, y3);
+        draw_line(x3, y3, x1, y1);
     }
     void draw_triangle(triangle &T, rgb c)
     {
@@ -113,7 +117,7 @@ public:
     }
     void fill_triangle(triangle &T, rgb c)
     {
-        SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, SDL_ALPHA_OPAQUE);
+        set_rgb(c);
         vector<pt> nodes = {(pt)T.d[0], (pt)T.d[1], (pt)T.d[2]};
         sort(nodes.begin(), nodes.end(), [](pt a, pt b)
         {
@@ -131,10 +135,10 @@ public:
         {
             if (y <= nodes[1].y)
             {
-                SDL_RenderDrawLine(renderer, line1.getX(y), y, line2.getX(y), y);
+                draw_line(line1.getX(y), y, line2.getX(y), y);
             }else
             {
-                SDL_RenderDrawLine(renderer, line1.getX(y), y, line3.getX(y), y);
+                draw_line(line1.getX(y), y, line3.getX(y), y);
             }
         }
     }
@@ -166,4 +170,5 @@ public:
     virtual int on_update(float elapsed)                            = 0;
     virtual int on_update(int step, float reduction_coef)           = 0;
     virtual int on_keydown(SDL_Keycode key)                         = 0;
+    virtual int on_mouse(Sint32 mousekey)                           = 0;
 };
