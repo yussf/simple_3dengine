@@ -18,8 +18,8 @@ public:
 	float min_L					= 0.2f;
 	bool draw_edges				= 0.0f;
 	float yaw					= 0.0f;
-	float dyaw					= 0.5f;
-	float velocity				= 5.0f;
+	float dyaw					= 0.1f;
+	float velocity				= 0.2f;
 	
 	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
 	{
@@ -36,6 +36,53 @@ public:
 			y.z /= w;
 		}
 		return y;
+	}
+	int clipTriangle(plane &p, triangle &inT, triangle &outT1, triangle &outT2)
+	{
+		vec3d* in_points[3]; 
+		vec3d* out_points[3];
+		int in_count = 0;
+		int out_count = 0;
+		int d[3];
+		//calculate distances
+		for(int i=0;i<3;i++) d[i] = p.getDist(inT.d[i]);
+		//check if vertices are inside or outside
+		for(int i=0;i<3;i++){
+			if(d[i]>=0) in_points[in_count++] = &inT.d[i];
+			else out_points[out_count++] = &inT.d[i];
+		}
+		vec3d interT1, interT2;
+		switch (in_count)
+		{
+		case 0	:
+			return 0;
+			break;
+		case 3	:
+			outT1 = inT;
+			return 1;
+			break;
+		case 1	:
+			interT1 = p.getIntersectionWithRay(*in_points[0],*out_points[0]);
+			interT2 = p.getIntersectionWithRay(*in_points[0],*out_points[1]);
+			outT1.d[0] = *in_points[0];
+			outT1.d[1] = interT1;
+			outT1.d[2] = interT2;
+			return 1;
+			break;
+		case 2	:
+			interT1 = p.getIntersectionWithRay(*in_points[0],*out_points[0]);
+			interT2 = p.getIntersectionWithRay(*in_points[1],*out_points[0]);
+			//polarity might be wrong
+			//TODO
+			outT1.d[0] = *in_points[0];
+			outT1.d[1] = *in_points[1];
+			outT1.d[2] = interT1;
+			outT2.d[0] = *in_points[0];
+			outT2.d[1] = interT1;
+			outT2.d[2] = interT2;
+			return 2;
+			break;
+		}
 	}
 	void scaleTriangle(triangle &T)
 	{
@@ -202,12 +249,8 @@ public:
 	}
 	int on_update(float elapsed_time) override
 	{
-		matrix4x4 XRotation 	= createRotationMatrix(elapsed_time*0.5f, 'x');
-		matrix4x4 YRotation 	= createRotationMatrix(elapsed_time*0.5f, 'y');
-		matrix4x4 ZRotation 	= createRotationMatrix(elapsed_time*0.5f, 'z');
 		matrix4x4 yawMatrix		= createRotationMatrix(yaw,'y');
-		matrix4x4 worldMatrix 	= XRotation*YRotation*ZRotation;
-		worldMatrix 			= createEyeMatrix();
+		matrix4x4 worldMatrix 	= createEyeMatrix();
 		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
 		vec3d target_vec 		= {0.0f,0.0f,1.0f};
 		dir_vec 				= vecxMatrix(target_vec,yawMatrix);
@@ -221,29 +264,51 @@ public:
 			//world transformation
 			worldT = transformTriangle(T,worldMatrix,offset_vec);
 			
-			//projection transform
+			//checking if triangle is visible or not
 			vec3d normal = getNormal(worldT);
 			if (normal * (worldT.d[1] - eye_vec) < 0)
 			{
+				//view transformation
 				viewT = transformTriangle(worldT, viewMatrix);
-				projT = transformTriangle(viewT, projectionMarix);
-				scaleTriangle(projT);
-				float L = abs(light_source*normal);
-				projT.L = L + min_L;
-				visibleTriangles.push_back(projT);
+
+				//clipping transformation
+				// plane nearPlane = {{0.0f,0.0f,1.0f},{0.0f,0.0f,1.0f}};
+				// triangle clippedT[2];
+				// int nClipped = clipTriangle(nearPlane,viewT,clippedT[0],clippedT[1]);
+				// //if (nClipped == 0) cout << "Told ya" << endl;
+
+				// for (int j=0;j<nClipped;j++)
+				// {					
+					//projection transformation
+					projT = transformTriangle(viewT, projectionMarix);
+
+					//scaling for the window
+					scaleTriangle(projT);
+
+					//determining color shades
+					projT.L = abs(light_source*normal) + min_L;
+
+					//add to the drawing stack to be sorted by z
+					visibleTriangles.push_back(projT);
+					
+				// }
 			}
 		}
+		
+		//sorting the stack by z-value
 		sort(visibleTriangles.begin(), visibleTriangles.end(), [](triangle &A, triangle &B){
 			float za = A.d[0].z + A.d[1].z + A.d[2].z ;
 			float zb = B.d[0].z + B.d[1].z + B.d[2].z ;
 			return za > zb;
 		});
 		
+		//drawing the triangles on the screen
 		for (triangle T : visibleTriangles){
-			if (draw_edges) draw_triangle(T);
 			fill_triangle(T,T.L);
-			//cout << (string)T.color << endl;
+			//if (draw_edges) draw_triangle(T,{0,0,0,255});
 		}
+
+		
 		return 0;
 	}
 	int on_update(int step, float reduction_coef) override
@@ -259,7 +324,7 @@ public:
 				eye_vec.x += dcam_const;
 				break;
 			case SDLK_LEFT 	: 
-				eye_vec.x -= dcam_const;;
+				eye_vec.x -= dcam_const;
 				break;
 			case SDLK_UP	:
 				eye_vec.y -= dcam_const;
@@ -274,10 +339,10 @@ public:
 				yaw -= dyaw;
 				break;
 			case SDLK_z :
-				eye_vec = eye_vec + dir_vec*velocity;
+				eye_vec += dir_vec*velocity;
 				break;
 			case SDLK_s	:
-				eye_vec = eye_vec - dir_vec*velocity;
+				eye_vec -= dir_vec*velocity;
 				break;
 			default:
 				break;

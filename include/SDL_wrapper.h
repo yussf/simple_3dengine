@@ -131,7 +131,7 @@ public:
         //cout << line1.getString() << "||" << line2.getString() << "||" << line3.getString() << endl;
         //cout << nodes[0].getString() << "||" << nodes[1].getString() << "||" << nodes[2].getString() << endl;
 
-        for (int y = nodes[0].y+1; y<nodes[2].y; y++)
+        for (int y = nodes[0].y+1; y<nodes[2].y-1; y++)
         {
             if (y <= nodes[1].y)
             {

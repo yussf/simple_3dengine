@@ -84,7 +84,6 @@ struct hsl
 struct vec3d
 {
 	float x,y,z = {0};
-
 	operator pt() const
 	{
 		pt r;
@@ -167,6 +166,28 @@ struct vec3d
 	operator string() const
 	{
 		return "("+to_string(x)+","+to_string(y)+","+to_string(z)+")";
+	}
+};
+struct plane
+{
+	vec3d P, normal;
+	vec3d getIntersectionWithRay(vec3d &A, vec3d &B)
+	{
+		normal.normalize();
+		vec3d u = B - A;
+		vec3d w = A - P;
+		
+		//not very useful since we calculate the relative position of verticies
+		//to the plane before requesting the intersection
+		if(normal*u == 0) return {0,0,0};
+		else{
+			float s = -(normal*w)/(normal*u);
+			return A + u*s;
+		}
+	}
+	float getDist(vec3d pt)
+	{
+		return normal*(pt - P);
 	}
 };
 struct triangle
