@@ -32,7 +32,7 @@ class debugger : public engine3d
 	{
 		rgb c[2];
 		c[0] = {255,0,0};
-		c[1] = {0,255,0};
+		c[1] = {0,255,0,0};
 		matrix2x2 mat = createRotationMatrix(step*reduction_coef);
 		triangle rotatedT;
 		for (auto T : _mesh.T)
@@ -41,7 +41,7 @@ class debugger : public engine3d
 			rotateTriangle(T,rotatedT,mat);
 			scaleTriangle(rotatedT);
 			cout << "original :" << (string)rotatedT << endl;
-			plane nearPlane = {{450,540,0},{-1,0,0}};
+			plane nearPlane = {{450,650,0},{1,0,0}};
 			triangle clippedT[2];
 			nClipped = clipTriangle(nearPlane,rotatedT,clippedT[0],clippedT[1]);
 			fill_triangle(rotatedT);

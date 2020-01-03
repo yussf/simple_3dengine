@@ -73,16 +73,16 @@ public:
 			return 1;
 			break;
 		case 2	:
-			interT1 = p.getIntersectionWithRay(*in_points[0],*out_points[0]);
-			interT2 = p.getIntersectionWithRay(*in_points[1],*out_points[0]);
+			interT1 = p.getIntersectionWithRay(*out_points[0],*in_points[0]);
+			interT2 = p.getIntersectionWithRay(*out_points[0],*in_points[1]);
 			//polarity might be wrong
 			//TODO
 			outT1.d[0] = *in_points[0];
 			outT1.d[1] = *in_points[1];
-			outT1.d[2] = interT1;
+			outT1.d[2] = interT2;
 			outT2.d[0] = *in_points[0];
-			outT2.d[1] = interT1;
-			outT2.d[2] = interT2;
+			outT2.d[1] = interT2;
+			outT2.d[2] = interT1;
 			return 2;
 			break;
 		}
@@ -256,7 +256,7 @@ public:
 		matrix4x4 YRotation 	= createRotationMatrix(ymeshRot, 'y');
 		matrix4x4 ZRotation 	= createRotationMatrix(zmeshRot, 'z');
 		matrix4x4 worldMatrix 	= ZRotation*YRotation*XRotation;
-		//worldMatrix = createEyeMatrix()
+		worldMatrix = createEyeMatrix();
 		matrix4x4 yawMatrix		= createRotationMatrix(yaw,'y');
 		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
 		vec3d target_vec 		= {0.0f,0.0f,1.0f};
