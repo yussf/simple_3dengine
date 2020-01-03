@@ -28,12 +28,12 @@ class debugger : public engine3d
 		};
 		return 0;
 	}
-	int on_update(int step, float reduction_coef) override
+	int on_update(float elapsed) override
 	{
 		rgb c[2];
 		c[0] = {255,0,0};
 		c[1] = {0,255,0,0};
-		matrix2x2 mat = createRotationMatrix(step*reduction_coef);
+		matrix2x2 mat = createRotationMatrix(coef_reduction);
 		triangle rotatedT;
 		for (auto T : _mesh.T)
 		{

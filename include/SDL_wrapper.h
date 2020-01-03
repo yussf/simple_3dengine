@@ -15,8 +15,7 @@ public:
     int window_width        = 800;
     int window_heigth       = 800;
     float coef_reduction    = 0.005;
-    rgb background        = {0,0,0,255};
-    int mode                = 0;
+    rgb background          = {0,0,0,255};
     int step                = 0;
     ~SDL_wrapper()
     {
@@ -24,9 +23,8 @@ public:
         if (window) SDL_DestroyWindow(window);
         SDL_Quit();
     }
-    int init(int mode)
+    int init()
     {
-        this->mode = mode;
         on_create();
 
         if (SDL_Init(SDL_INIT_VIDEO) == 0)
@@ -61,8 +59,7 @@ public:
                 SDL_Event event;
                 set_rgb(background);
                 SDL_RenderClear(renderer);
-                if (mode == 0) on_update(elapsed);
-                if (mode == 1) on_update(step,coef_reduction);
+                on_update(elapsed);                
                 SDL_RenderPresent(renderer);
                 while (SDL_PollEvent(&event))
                 {
@@ -167,12 +164,10 @@ public:
     }
     int on_resize(){
         update_window_size();
-        //if (mode == 1) on_update(step, coef_reduction);
         return 0;
     }
     virtual int on_create()                                         = 0;
     virtual int on_update(float elapsed)                            = 0;
-    virtual int on_update(int step, float reduction_coef)           = 0;
     virtual int on_keydown(SDL_Keycode key)                         = 0;
     virtual int on_keyup(SDL_Keycode key)                           = 0;
     virtual int on_wheel(Sint32 wheely)                             = 0;

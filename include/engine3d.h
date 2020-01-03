@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <list>
 class engine3d: public SDL_wrapper
 {
 public:	
@@ -23,7 +24,10 @@ public:
 	float xmeshRot, ymeshRot, zmeshRot;
 	int ctrlPressed 			= 0;
 	int x0, y0, xf, yf;
-
+	plane bottomEdge			= {{0,(float)get_Wheigth(),0},{0,-1,0}};
+	plane topEdge				= {{0,0,0},{0,1,0}};
+	plane rightEdge				= {{(float)get_Wwidth(),0,0},{-1,0,0}};
+	plane leftEdge				= {{0,0,0},{1,0,0}};
 	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
 	{
 		vec3d y;
@@ -70,6 +74,11 @@ public:
 			outT1.d[0] = *in_points[0];
 			outT1.d[1] = interT1;
 			outT1.d[2] = interT2;
+
+			//keep same coloring and shading
+			outT1.color = inT.color;
+			outT1.L		= inT.L;
+
 			return 1;
 			break;
 		case 2	:
@@ -83,6 +92,12 @@ public:
 			outT2.d[0] = *in_points[0];
 			outT2.d[1] = interT2;
 			outT2.d[2] = interT1;
+
+			//keep same coloring and shading
+			outT1.color = inT.color;
+			outT1.L		= inT.L;
+			outT2.color	= inT.color;
+			outT2.L		= inT.L;
 			return 2;
 			break;
 		}
@@ -279,10 +294,10 @@ public:
 				viewT = transformTriangle(worldT, viewMatrix);
 
 				//clipping transformation
-				plane nearPlane = {{0.0f,0.0f,1.0f},{0.0f,0.0f,1.0f}};
+				vec3d off = {0.0f,0.0f,1.0f};
+				plane nearPlane = {off,{0.0f,0.0f,1.0f}};
 				triangle clippedT[2];
 				int nClipped = clipTriangle(nearPlane,viewT,clippedT[0],clippedT[1]);
-				//if (nClipped == 0) cout << "Told ya" << endl;
 
 				for (int j=0;j<nClipped;j++)
 				{					
@@ -309,16 +324,38 @@ public:
 			return za > zb;
 		});
 		
-		//drawing the triangles on the screen
-		for (triangle T : visibleTriangles){
-			fill_triangle(T,T.L);
-			if (draw_edges) draw_triangle(T,{0,0,0,255});
+		//clipping against the edges of the screen
+		for(triangle T : visibleTriangles)
+		{
+			triangle clipped[2];
+			int nClipped = 0;
+			plane screenEdges[4] = {bottomEdge, topEdge, rightEdge, leftEdge};
+			list<triangle> clippingQueue;
+			clippingQueue.push_back(T);
+			int countT = 1;
+			for(plane p : screenEdges)
+			{
+				while(countT > 0)
+				{
+					triangle frontT = clippingQueue.front();
+					clippingQueue.pop_front();
+					countT--;
+
+					nClipped = clipTriangle(p,frontT,clipped[0],clipped[1]);
+
+					for(int j=0;j<nClipped;j++) clippingQueue.push_back(clipped[j]);
+				}
+				countT = clippingQueue.size();
+			}
+
+			//drawing the triangles on the screen
+			for (triangle T : clippingQueue)
+			{
+				fill_triangle(T,T.L);
+				if (draw_edges) draw_triangle(T,{0,0,0,255});
+			}
 		}
-		return 0;
-	}
-	int on_update(int step, float reduction_coef) override
-	{
-		if (mode == 1) on_update(step*reduction_coef);
+
 		return 0;
 	}
 	int on_keydown(SDL_Keycode key) override
@@ -366,6 +403,7 @@ public:
 		default:
 			break;
 		}
+		return 0;
 	}
 	int on_wheel(Sint32 y) override
 	{
@@ -403,6 +441,7 @@ public:
 				zmeshRot += (yf - y0)*mouse_calibration_coef;
 			}
 		}
+		return 0;
 	}
 
 };

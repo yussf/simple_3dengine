@@ -7,21 +7,19 @@
 
 int main(int argc, char* argv[])
 {
-	int mode = 0;
-	if (argc > 1) mode = atoi(argv[1]);
 #if DEBUG == 0
 	engine3d instance3d;
 	instance3d.fg_rate 			= 2000;
 	instance3d.coef_reduction 	= 0.08;
 	instance3d.coef_translation = 8;
 	instance3d.draw_edges	 	= 1;
-	if(!instance3d.init(mode)){
+	if(!instance3d.init()){
 		instance3d.load_mesh("objs/axis.obj");
 		instance3d.start();
 	}
 #else
 	debugger debug;
-	if(!debug.init(mode)) debug.start();
+	if(!debug.init()) debug.start();
 #endif
     return 0;
 }
