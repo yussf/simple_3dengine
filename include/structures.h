@@ -1,3 +1,10 @@
+/*
+	Author 		: Youssef Doubli
+	Github 		: github.com/yussf
+	Email		: doubli@eurecom.fr
+	Last update : 3/01/2020
+
+*/
 #include <iostream>
 #include <string>
 #include <vector>
@@ -71,6 +78,12 @@ struct rgb
 		return res;
 	}
 };
+// declarations of basic colors
+rgb RED = {255,0,0};
+rgb GREEN = {0,255,0};
+rgb BLUE = {0,0,255};
+rgb WHITE = {255,255,255};
+rgb BLACK = {0,0,0};
 // intended for better control over the luminance of rgb colors
 // not used yet
 struct hsl

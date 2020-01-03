@@ -1,3 +1,10 @@
+/*
+	Author 		: Youssef Doubli
+	Github 		: github.com/yussf
+	Email		: doubli@eurecom.fr
+	Last update : 3/01/2020
+
+*/
 #include "structures.h"
 #include <SDL2/SDL.h>
 #include <algorithm>

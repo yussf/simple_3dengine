@@ -1,3 +1,10 @@
+/*
+	Author 		: Youssef Doubli
+	Github 		: github.com/yussf
+	Email		: doubli@eurecom.fr
+	Last update : 3/01/2020
+
+*/
 #define DEBUG 0
 #if DEBUG == 0
 	#include "engine3d.h" 
@@ -14,7 +21,7 @@ int main(int argc, char* argv[])
 	instance3d.coef_translation = 8;
 	instance3d.draw_edges	 	= 1;
 	if(!instance3d.init()){
-		instance3d.load_mesh("objs/axis.obj");
+		instance3d.load_mesh("objs/mountains.obj");
 		instance3d.start();
 	}
 #else

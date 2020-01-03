@@ -1,3 +1,10 @@
+/*
+	Author 		: Youssef Doubli
+	Github 		: github.com/yussf
+	Email		: doubli@eurecom.fr
+	Last update : 3/01/2020
+
+*/
 #include "SDL_wrapper.h"
 #include <fstream>
 #include <sstream>
@@ -21,13 +28,13 @@ public:
 	float yaw					= 0.0f;
 	float dyaw					= 0.1f;
 	float velocity				= 0.2f;
-	float xmeshRot, ymeshRot, zmeshRot;
 	int ctrlPressed 			= 0;
 	int x0, y0, xf, yf;
 	plane bottomEdge			= {{0,(float)get_Wheigth(),0},{0,-1,0}};
 	plane topEdge				= {{0,0,0},{0,1,0}};
 	plane rightEdge				= {{(float)get_Wwidth(),0,0},{-1,0,0}};
 	plane leftEdge				= {{0,0,0},{1,0,0}};
+	float xmeshRot, ymeshRot, zmeshRot;
 	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
 	{
 		vec3d y;
@@ -46,6 +53,7 @@ public:
 	}
 	int clipTriangle(plane &p, triangle &inT, triangle &outT1, triangle &outT2)
 	{
+		int cDEBUG = 1;
 		vec3d* in_points[3]; 
 		vec3d* out_points[3];
 		int in_count = 0;
@@ -76,8 +84,10 @@ public:
 			outT1.d[2] = interT2;
 
 			//keep same coloring and shading
-			outT1.color = inT.color;
-			outT1.L		= inT.L;
+			if (cDEBUG) outT1.color = RED;
+			else outT1.color 		= inT.color;
+
+			outT1.L	= inT.L;
 
 			return 1;
 			break;
@@ -94,10 +104,18 @@ public:
 			outT2.d[2] = interT1;
 
 			//keep same coloring and shading
-			outT1.color = inT.color;
-			outT1.L		= inT.L;
-			outT2.color	= inT.color;
-			outT2.L		= inT.L;
+			if (cDEBUG)
+			{
+				outT1.color = GREEN;
+				outT2.color = BLUE;
+			}else
+			{
+				outT1.color = inT.color;
+				outT2.color	= inT.color;
+			} 
+			outT1.L	= inT.L;
+			outT2.L	= inT.L;
+			
 			return 2;
 			break;
 		}

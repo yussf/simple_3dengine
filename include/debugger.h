@@ -1,3 +1,10 @@
+/*
+	Author 		: Youssef Doubli
+	Github 		: github.com/yussf
+	Email		: doubli@eurecom.fr
+	Last update : 3/01/2020
+
+*/
 #include "engine3d.h"
 class debugger : public engine3d
 {
