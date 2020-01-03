@@ -249,8 +249,12 @@ public:
 	}
 	int on_update(float elapsed_time) override
 	{
+		matrix4x4 XRotation 	= createRotationMatrix(elapsed_time*0.5f, 'x');
+		matrix4x4 YRotation 	= createRotationMatrix(elapsed_time*0.5f, 'y');
+		matrix4x4 ZRotation 	= createRotationMatrix(elapsed_time*0.5f, 'z');
+		matrix4x4 worldMatrix 	= XRotation*YRotation*ZRotation;
+		worldMatrix = createEyeMatrix();
 		matrix4x4 yawMatrix		= createRotationMatrix(yaw,'y');
-		matrix4x4 worldMatrix 	= createEyeMatrix();
 		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
 		vec3d target_vec 		= {0.0f,0.0f,1.0f};
 		dir_vec 				= vecxMatrix(target_vec,yawMatrix);
@@ -272,13 +276,12 @@ public:
 				viewT = transformTriangle(worldT, viewMatrix);
 
 				//clipping transformation
-				// plane nearPlane = {{0.0f,0.0f,1.0f},{0.0f,0.0f,1.0f}};
-				// triangle clippedT[2];
-				// int nClipped = clipTriangle(nearPlane,viewT,clippedT[0],clippedT[1]);
-				// //if (nClipped == 0) cout << "Told ya" << endl;
+				plane nearPlane = {{0.0f,0.0f,1.0f},{0.0f,0.0f,1.0f}};
+				triangle clippedT[2];
+				int nClipped = clipTriangle(nearPlane,viewT,clippedT[0],clippedT[1]);
 
-				// for (int j=0;j<nClipped;j++)
-				// {					
+				for (int j=0;j<nClipped;j++)
+				{					
 					//projection transformation
 					projT = transformTriangle(viewT, projectionMarix);
 
@@ -291,7 +294,7 @@ public:
 					//add to the drawing stack to be sorted by z
 					visibleTriangles.push_back(projT);
 					
-				// }
+				}
 			}
 		}
 		
@@ -305,7 +308,7 @@ public:
 		//drawing the triangles on the screen
 		for (triangle T : visibleTriangles){
 			fill_triangle(T,T.L);
-			//if (draw_edges) draw_triangle(T,{0,0,0,255});
+			if (draw_edges) draw_triangle(T,{0,0,0,255});
 		}
 
 		
