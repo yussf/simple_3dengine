@@ -20,7 +20,10 @@ public:
 	float yaw					= 0.0f;
 	float dyaw					= 0.1f;
 	float velocity				= 0.2f;
-	
+	float xmeshRot, ymeshRot, zmeshRot;
+	int ctrlPressed 			= 0;
+	int x0, y0, xf, yf;
+
 	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
 	{
 		vec3d y;
@@ -249,10 +252,10 @@ public:
 	}
 	int on_update(float elapsed_time) override
 	{
-		matrix4x4 XRotation 	= createRotationMatrix(elapsed_time*0.5f, 'x');
-		matrix4x4 YRotation 	= createRotationMatrix(elapsed_time*0.5f, 'y');
-		matrix4x4 ZRotation 	= createRotationMatrix(elapsed_time*0.5f, 'z');
-		matrix4x4 worldMatrix 	= XRotation*YRotation*ZRotation;
+		matrix4x4 XRotation 	= createRotationMatrix(xmeshRot, 'x');
+		matrix4x4 YRotation 	= createRotationMatrix(ymeshRot, 'y');
+		matrix4x4 ZRotation 	= createRotationMatrix(zmeshRot, 'z');
+		matrix4x4 worldMatrix 	= ZRotation*YRotation*XRotation;
 		//worldMatrix = createEyeMatrix()
 		matrix4x4 yawMatrix		= createRotationMatrix(yaw,'y');
 		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
@@ -311,8 +314,6 @@ public:
 			fill_triangle(T,T.L);
 			if (draw_edges) draw_triangle(T,{0,0,0,255});
 		}
-
-		
 		return 0;
 	}
 	int on_update(int step, float reduction_coef) override
@@ -320,7 +321,7 @@ public:
 		if (mode == 1) on_update(step*reduction_coef);
 		return 0;
 	}
-	int on_keydown(SDL_Keycode key, float elapsed) override
+	int on_keydown(SDL_Keycode key) override
 	{
 		switch(key)
 		{
@@ -348,13 +349,25 @@ public:
 			case SDLK_s	:
 				eye_vec -= dir_vec*velocity;
 				break;
+			case SDLK_LCTRL	:
+				ctrlPressed = 1;
 			default:
 				break;
-			
 		}
 		return 0;
 	}
-	int on_mouse(Sint32 y) override
+	int on_keyup(SDL_Keycode key) override
+	{
+		switch (key)
+		{
+		case SDLK_LCTRL:
+			ctrlPressed = 0;
+			break;
+		default:
+			break;
+		}
+	}
+	int on_wheel(Sint32 y) override
 	{
 		if (y > 0)
 		{
@@ -364,6 +377,32 @@ public:
 			eye_vec.z -= dcam_const;
 		}
 		return 0;
+	}
+	int on_mouse(Uint32 type) override
+	{	
+		cout << ctrlPressed << endl;;
+		float mouse_calibration_coef = 0.001;
+		if (type == SDL_MOUSEBUTTONDOWN)
+		{
+			SDL_GetGlobalMouseState(&x0,&y0);
+		}
+		else if(type == SDL_MOUSEBUTTONUP)
+		{
+			SDL_GetGlobalMouseState(&xf, &yf);
+			if (!ctrlPressed)
+			{
+				int dx = xf - x0;
+				int dy = yf - y0;
+				//cout << dx << "||" << dy << endl;
+				//if mouse motion is mostly along the x-axis
+				if (dx > dy) 	ymeshRot += (xf - x0)*mouse_calibration_coef;
+				else 			xmeshRot += (yf - y0)*mouse_calibration_coef;
+			}
+			else
+			{
+				zmeshRot += (yf - y0)*mouse_calibration_coef;
+			}
+		}
 	}
 
 };

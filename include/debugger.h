@@ -56,10 +56,10 @@ class debugger : public engine3d
 		}
 		return 0;
 	}
-	int on_keydown(SDL_Keycode key, float elapsed) override
+	int on_keydown(SDL_Keycode key) override
 	{
 		//keep super on_keydown()
-		engine3d::on_keydown(key, elapsed);
+		engine3d::on_keydown(key);
 		if (key == SDLK_SPACE) check_state();
 		return 0;
 	}
