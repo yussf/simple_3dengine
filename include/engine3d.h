@@ -253,7 +253,7 @@ public:
 		matrix4x4 YRotation 	= createRotationMatrix(elapsed_time*0.5f, 'y');
 		matrix4x4 ZRotation 	= createRotationMatrix(elapsed_time*0.5f, 'z');
 		matrix4x4 worldMatrix 	= XRotation*YRotation*ZRotation;
-		worldMatrix = createEyeMatrix();
+		//worldMatrix = createEyeMatrix()
 		matrix4x4 yawMatrix		= createRotationMatrix(yaw,'y');
 		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
 		vec3d target_vec 		= {0.0f,0.0f,1.0f};
@@ -279,11 +279,12 @@ public:
 				plane nearPlane = {{0.0f,0.0f,1.0f},{0.0f,0.0f,1.0f}};
 				triangle clippedT[2];
 				int nClipped = clipTriangle(nearPlane,viewT,clippedT[0],clippedT[1]);
+				//if (nClipped == 0) cout << "Told ya" << endl;
 
 				for (int j=0;j<nClipped;j++)
 				{					
 					//projection transformation
-					projT = transformTriangle(viewT, projectionMarix);
+					projT = transformTriangle(clippedT[j], projectionMarix);
 
 					//scaling for the window
 					scaleTriangle(projT);
