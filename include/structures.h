@@ -82,6 +82,7 @@ struct rgb
 rgb RED = {255,0,0};
 rgb GREEN = {0,255,0};
 rgb BLUE = {0,0,255};
+rgb BROWN = {165,107,107};
 rgb WHITE = {255,255,255};
 rgb BLACK = {0,0,0};
 // intended for better control over the luminance of rgb colors
@@ -97,6 +98,7 @@ struct hsl
 struct vec3d
 {
 	float x,y,z = {0};
+	float w = 1;
 	operator pt() const
 	{
 		pt r;
@@ -143,6 +145,17 @@ struct vec3d
 		r.y = y*k;
 		r.z = z*k;
 		return r;
+	}
+	vec3d operator/(const float& k) const
+	{
+		if (k == 0) return *this;
+		else{
+			vec3d r;
+			r.x = x/k;
+			r.y = y/k;
+			r.z = z/k;
+			return r;
+		}
 	}
 	float operator*(const vec3d& a) const
 	{
@@ -206,7 +219,7 @@ struct plane
 struct triangle
 {
 	vec3d d[3];
-	rgb color = {255,255,255,255};
+	rgb color = WHITE;
 	float L = 1;
 	operator string() const
 	{

@@ -15,6 +15,7 @@ class engine3d: public SDL_wrapper
 public:	
 	float global_step;
 	mesh _mesh;
+	int x0, y0;
 	matrix4x4 projectionMarix 	= createProjectionMatrix();
 	vec3d eye_vec 				= {0.0f,0.0f,0.0f};
 	vec3d dir_vec				= {0.0f,0.0f,1.0f};
@@ -32,27 +33,30 @@ public:
 	float velocity				= 1.0f;
 	int ctrlPressed 			= 0;
 	int lbtnPressed				= 0;
-	int x0, y0;
+	int showTrianglesFromBehind	= 1;
 	plane bottomEdge			= {{0,(float)get_Wheigth(),0},{0,-1,0}};
 	plane topEdge				= {{0,0,0},{0,1,0}};
 	plane rightEdge				= {{(float)get_Wwidth(),0,0},{-1,0,0}};
 	plane leftEdge				= {{0,0,0},{1,0,0}};
-	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
+	vec3d vecxMatrix(vec3d &x, matrix4x4 &p, bool scale = false)
 	{
 		vec3d y;
-		float w;
-		y.x = x.x*p.coef[0][0] + x.y*p.coef[1][0] + x.z*p.coef[2][0] + p.coef[3][0];
-		y.y = x.x*p.coef[0][1] + x.y*p.coef[1][1] + x.z*p.coef[2][1] + p.coef[3][1];
-		y.z = x.x*p.coef[0][2] + x.y*p.coef[1][2] + x.z*p.coef[2][2] + p.coef[3][2];
-		w 	= x.x*p.coef[0][3] + x.y*p.coef[1][3] + x.z*p.coef[2][3] + p.coef[3][3];
-
-		if (w!=0.0f){
-			y.x /= w;
-			y.y /= w;
-			y.z /= w;
-		}
+		y.x = x.x*p.coef[0][0] + x.y*p.coef[1][0] + x.z*p.coef[2][0] + x.w*p.coef[3][0];
+		y.y = x.x*p.coef[0][1] + x.y*p.coef[1][1] + x.z*p.coef[2][1] + x.w*p.coef[3][1];
+		y.z = x.x*p.coef[0][2] + x.y*p.coef[1][2] + x.z*p.coef[2][2] + x.w*p.coef[3][2];
+		y.w	= x.x*p.coef[0][3] + x.y*p.coef[1][3] + x.z*p.coef[2][3] + x.w*p.coef[3][3];
+		if (scale) y = y/y.w;
 		return y;
 	}
+	triangle normlizeByPerspective(triangle &T)
+	{
+		triangle r;
+		r.d[0] = T.d[0]/T.d[0].w;
+		r.d[1] = T.d[1]/T.d[1].w;
+		r.d[2] = T.d[2]/T.d[2].w;
+		return r;
+	}
+
 	int clipTriangle(plane &p, triangle &inT, triangle &outT1, triangle &outT2)
 	{
 		int cDEBUG = 0;
@@ -124,9 +128,16 @@ public:
 	}
 	void scaleTriangle(triangle &T)
 	{
-		T.d[0].x += 1.0f; T.d[0].y += 1.0f;
-		T.d[1].x += 1.0f; T.d[1].y += 1.0f;
-		T.d[2].x += 1.0f; T.d[2].y += 1.0f;
+		T.d[0].x *= -1;
+		T.d[1].x *= -1;
+		T.d[2].x *= -1;
+		T.d[0].y *= -1;
+		T.d[1].y *= -1;
+		T.d[2].y *= -1;
+
+		T.d[0] += {1,1,0};
+		T.d[1] += {1,1,0};
+		T.d[2] += {1,1,0};
 
 		T.d[0].x *= 0.5*get_Wwidth();
 		T.d[0].y *= 0.5*get_Wheigth();
@@ -135,12 +146,12 @@ public:
 		T.d[2].x *= 0.5*get_Wwidth();
 		T.d[2].y *= 0.5*get_Wheigth();
 	}
-	triangle transformTriangle(triangle &T, matrix4x4 &P, vec3d b = {0,0,0})
+	triangle transformTriangle(triangle &T, matrix4x4 &P, bool scale = false, vec3d b = {0,0,0})
 	{
 		triangle transfromedT;
-		transfromedT.d[0] = vecxMatrix(T.d[0], P) + b;
-		transfromedT.d[1] = vecxMatrix(T.d[1], P) + b;
-		transfromedT.d[2] = vecxMatrix(T.d[2], P) + b;
+		transfromedT.d[0] = vecxMatrix(T.d[0], P, scale) + b;
+		transfromedT.d[1] = vecxMatrix(T.d[1], P, scale) + b;
+		transfromedT.d[2] = vecxMatrix(T.d[2], P, scale) + b;
 		return transfromedT;
 	}
 	vec3d getNormal(triangle &T)
@@ -268,7 +279,7 @@ public:
 			
 			if (indicator == "v")
 			{
-				vec3d p = {-stof(a), -stof(b), stof(c)};
+				vec3d p = {stof(a), stof(b), stof(c)};
 				vertices.push_back(p);
 
 			}else if(indicator == "f")
@@ -302,11 +313,11 @@ public:
 		{
 			triangle projT, worldT, viewT;
 			//world transformation
-			worldT = transformTriangle(T,worldMatrix,offset_vec);
+			worldT = transformTriangle(T,worldMatrix,false,offset_vec);
 			
 			//checking if triangle is visible or not
 			vec3d normal = getNormal(worldT);
-			if (normal*(worldT.d[0] - eye_vec) < 0)
+			if (showTrianglesFromBehind | normal*(worldT.d[0] - eye_vec) < 0)
 			{
 				//view transformation
 				viewT = transformTriangle(worldT, viewMatrix);
@@ -320,7 +331,7 @@ public:
 				for (int j=0;j<nClipped;j++)
 				{					
 					//projection transformation
-					projT = transformTriangle(clippedT[j], projectionMarix);
+					projT = transformTriangle(clippedT[j], projectionMarix, true);
 
 					//scaling for the window
 					scaleTriangle(projT);
@@ -330,7 +341,6 @@ public:
 
 					//add to the drawing stack to be sorted by z
 					visibleTriangles.push_back(projT);
-					
 				}
 			}
 		}
@@ -381,16 +391,16 @@ public:
 		switch(key)
 		{
 			case SDLK_RIGHT : 
-				eye_vec.x += dcam_const;
-				break;
-			case SDLK_LEFT 	: 
 				eye_vec.x -= dcam_const;
 				break;
+			case SDLK_LEFT 	: 
+				eye_vec.x += dcam_const;
+				break;
 			case SDLK_UP	:
-				eye_vec.y -= dcam_const;
+				eye_vec.y += dcam_const;
 				break;
 			case SDLK_DOWN	:
-				eye_vec.y += dcam_const;
+				eye_vec.y -= dcam_const;
 				break;
 			case SDLK_q :
 				yaw += dyaw;
@@ -457,9 +467,9 @@ public:
 		{
 			int dx 	= x1 - x0;
 			int dy 	= y1 - y0;
-			yaw 	+= dyaw*dx*calib;
 			// the minus sign is to invert the pitch angle(duh)
-			pitch 	+= dpitch*(-dy)*calib;
+			yaw 	+= dyaw*(-dx)*calib;
+			pitch 	+= dpitch*dy*calib;
 		}
 		
 	}
