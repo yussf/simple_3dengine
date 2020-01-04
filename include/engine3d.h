@@ -23,18 +23,20 @@ public:
 	vec3d dforward_vec			= {0.0f,0.0f,-1.0f};
 	float coef_translation		= 3.0f;
 	float dcam_const			= 0.5f;
-	float min_L					= 0.2f;
+	float min_L					= 0.1f;
 	bool draw_edges				= 0.0f;
 	float yaw					= 0.0f;
 	float dyaw					= 0.1f;
-	float velocity				= 0.2f;
+	float pitch					= 0.0f;
+	float dpitch				= 0.1f;
+	float velocity				= 1.0f;
 	int ctrlPressed 			= 0;
-	int x0, y0, xf, yf;
+	int lbtnPressed				= 0;
+	int x0, y0;
 	plane bottomEdge			= {{0,(float)get_Wheigth(),0},{0,-1,0}};
 	plane topEdge				= {{0,0,0},{0,1,0}};
 	plane rightEdge				= {{(float)get_Wwidth(),0,0},{-1,0,0}};
 	plane leftEdge				= {{0,0,0},{1,0,0}};
-	float xmeshRot, ymeshRot, zmeshRot;
 	vec3d vecxMatrix(vec3d &x, matrix4x4 &p)
 	{
 		vec3d y;
@@ -53,7 +55,7 @@ public:
 	}
 	int clipTriangle(plane &p, triangle &inT, triangle &outT1, triangle &outT2)
 	{
-		int cDEBUG = 1;
+		int cDEBUG = 0;
 		vec3d* in_points[3]; 
 		vec3d* out_points[3];
 		int in_count = 0;
@@ -284,16 +286,14 @@ public:
 		return 0;	
 	}
 	int on_update(float elapsed_time) override
-	{
-		matrix4x4 XRotation 	= createRotationMatrix(xmeshRot, 'x');
-		matrix4x4 YRotation 	= createRotationMatrix(ymeshRot, 'y');
-		matrix4x4 ZRotation 	= createRotationMatrix(zmeshRot, 'z');
-		matrix4x4 worldMatrix 	= ZRotation*YRotation*XRotation;
-		worldMatrix = createEyeMatrix();
+	{	
+		matrix4x4 worldMatrix	= createEyeMatrix();
 		matrix4x4 yawMatrix		= createRotationMatrix(yaw,'y');
+		matrix4x4 pitchMatrix	= createRotationMatrix(pitch,'x');
+		matrix4x4 camTransform	= pitchMatrix*yawMatrix;
 		vec3d offset_vec		= {0.0f,0.0f,coef_translation};
 		vec3d target_vec 		= {0.0f,0.0f,1.0f};
-		dir_vec 				= vecxMatrix(target_vec,yawMatrix);
+		dir_vec 				= vecxMatrix(target_vec,camTransform);
 		target_vec				= eye_vec + dir_vec;
 		matrix4x4 viewMatrix 	= createLookAtMatrix(eye_vec,target_vec,up_vec);
 		vector<triangle> visibleTriangles;
@@ -306,7 +306,7 @@ public:
 			
 			//checking if triangle is visible or not
 			vec3d normal = getNormal(worldT);
-			if (normal * (worldT.d[1] - eye_vec) < 0)
+			if (normal*(worldT.d[0] - eye_vec) < 0)
 			{
 				//view transformation
 				viewT = transformTriangle(worldT, viewMatrix);
@@ -427,39 +427,41 @@ public:
 	{
 		if (y > 0)
 		{
-			eye_vec.z += dcam_const;
+			eye_vec += dir_vec*velocity;;
 		}else if (y < 0)
 		{
-			eye_vec.z -= dcam_const;
+			eye_vec -= dir_vec*velocity;;
 		}
 		return 0;
 	}
 	int on_mouse(Uint32 type) override
 	{	
-		cout << ctrlPressed << endl;;
-		float mouse_calibration_coef = 0.001;
-		if (type == SDL_MOUSEBUTTONDOWN)
+		if(type == SDL_MOUSEBUTTONUP)
 		{
+			lbtnPressed = 0;
+			x0 			= 0;
+			y0			= 0;
+		}else if(type == SDL_MOUSEBUTTONDOWN)
+		{
+			lbtnPressed = 1;
 			SDL_GetGlobalMouseState(&x0,&y0);
 		}
-		else if(type == SDL_MOUSEBUTTONUP)
-		{
-			SDL_GetGlobalMouseState(&xf, &yf);
-			if (!ctrlPressed)
-			{
-				int dx = xf - x0;
-				int dy = yf - y0;
-				//cout << dx << "||" << dy << endl;
-				//if mouse motion is mostly along the x-axis
-				if (dx > dy) 	ymeshRot += (xf - x0)*mouse_calibration_coef;
-				else 			xmeshRot += (yf - y0)*mouse_calibration_coef;
-			}
-			else
-			{
-				zmeshRot += (yf - y0)*mouse_calibration_coef;
-			}
-		}
 		return 0;
+	}
+	int on_motion() override
+	{
+		int x1, y1;
+		SDL_GetGlobalMouseState(&x1,&y1);
+		float calib = 0.001f;
+		if (lbtnPressed)
+		{
+			int dx 	= x1 - x0;
+			int dy 	= y1 - y0;
+			yaw 	+= dyaw*dx*calib;
+			// the minus sign is to invert the pitch angle(duh)
+			pitch 	+= dpitch*(-dy)*calib;
+		}
+		
 	}
 
 };

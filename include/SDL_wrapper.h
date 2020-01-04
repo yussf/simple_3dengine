@@ -74,7 +74,8 @@ public:
                     else if(event.type  == SDL_KEYDOWN) on_keydown(event.key.keysym.sym);
                     else if(event.type  == SDL_KEYUP) on_keyup(event.key.keysym.sym);
                     else if(event.type  == SDL_MOUSEWHEEL) on_wheel(event.wheel.y);
-                    else if (event.type == SDL_MOUSEBUTTONUP 
+                    else if(event.type  == SDL_MOUSEMOTION) on_motion();
+                    else if (event.type == SDL_MOUSEBUTTONUP
                             | event.type == SDL_MOUSEBUTTONDOWN) on_mouse(event.type);
                     else if((event.type == SDL_WINDOWEVENT)
                             & (event.window.event == SDL_WINDOWEVENT_RESIZED)) on_resize();
@@ -179,4 +180,5 @@ public:
     virtual int on_keyup(SDL_Keycode key)                           = 0;
     virtual int on_wheel(Sint32 wheely)                             = 0;
     virtual int on_mouse(Uint32 type)                               = 0;
+    virtual int on_motion()                                         = 0;
 };

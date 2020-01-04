@@ -1,5 +1,5 @@
 CC 			= g++
-CFLAGS 		= -W -Wall
+CFLAGS 		= -w -Wall
 INCLUDES 	= -I./include/
 LDFLAGS 	= -lSDL2
 SOURCE_DIR 	= ./source
@@ -11,7 +11,7 @@ main:
 	$(CC) $(SOURCE_DIR)/main.cpp $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $(BINARY_DIR)/main
 
 run:
-	$(BINARY_DIR)/main 0
+	$(BINARY_DIR)/main
 
 clean:
 	rm -f $(BINARY_DIR)/main
