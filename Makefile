@@ -1,5 +1,5 @@
 CC 			= g++
-CFLAGS 		= -w -Wall
+CFLAGS 		= -W -Wall
 INCLUDES 	= -I./include/
 LDFLAGS 	= -lSDL2
 SOURCE_DIR 	= ./source

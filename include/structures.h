@@ -37,6 +37,7 @@ struct line
 struct pt
 {
 	float x,y = {0};
+	float w   = 1;
 	operator string() const
 	{
 		return "("+to_string(x)+","+to_string(y)+")";

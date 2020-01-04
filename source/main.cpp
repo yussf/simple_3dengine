@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 	}else
 	{
 		cout << "please specifiy the .obj file to render.\nDefault mesh has been selected." << endl;
-		mesh_path = "objs/mountains.obj";
+		mesh_path = "objs/axis.obj";
 	}
 #if DEBUG == 0
 	engine3d instance3d;

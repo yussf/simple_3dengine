@@ -3,7 +3,7 @@
 	Github 		: github.com/yussf
 	Email		: doubli@eurecom.fr
 	Last update : 3/01/2020
-
+ 
 */
 #include "SDL_wrapper.h"
 #include <fstream>
@@ -24,7 +24,7 @@ public:
 	vec3d dforward_vec			= {0.0f,0.0f,-1.0f};
 	float coef_translation		= 3.0f;
 	float dcam_const			= 0.5f;
-	float min_L					= 0.1f;
+	float min_L					= 0.25f;
 	bool draw_edges				= 0.0f;
 	float yaw					= 0.0f;
 	float dyaw					= 0.1f;
@@ -33,7 +33,7 @@ public:
 	float velocity				= 1.0f;
 	int ctrlPressed 			= 0;
 	int lbtnPressed				= 0;
-	int showTrianglesFromBehind	= 1;
+	int showTrianglesFromBehind	= 0;
 	plane bottomEdge			= {{0,(float)get_Wheigth(),0},{0,-1,0}};
 	plane topEdge				= {{0,0,0},{0,1,0}};
 	plane rightEdge				= {{(float)get_Wwidth(),0,0},{-1,0,0}};
@@ -48,15 +48,6 @@ public:
 		if (scale) y = y/y.w;
 		return y;
 	}
-	triangle normlizeByPerspective(triangle &T)
-	{
-		triangle r;
-		r.d[0] = T.d[0]/T.d[0].w;
-		r.d[1] = T.d[1]/T.d[1].w;
-		r.d[2] = T.d[2]/T.d[2].w;
-		return r;
-	}
-
 	int clipTriangle(plane &p, triangle &inT, triangle &outT1, triangle &outT2)
 	{
 		int cDEBUG = 0;
@@ -64,7 +55,7 @@ public:
 		vec3d* out_points[3];
 		int in_count = 0;
 		int out_count = 0;
-		int d[3];
+		float d[3];
 		//calculate distances
 		for(int i=0;i<3;i++) d[i] = p.getDist(inT.d[i]);
 		//check if vertices are inside or outside
@@ -98,8 +89,8 @@ public:
 			return 1;
 			break;
 		case 2	:
-			interT1 = p.getIntersectionWithRay(*out_points[0],*in_points[0]);
-			interT2 = p.getIntersectionWithRay(*out_points[0],*in_points[1]);
+			interT1 = p.getIntersectionWithRay(*in_points[0],*out_points[0]);
+			interT2 = p.getIntersectionWithRay(*in_points[1],*out_points[0]);
 			//polarity might be wrong
 			//TODO
 			outT1.d[0] = *in_points[0];
@@ -321,15 +312,18 @@ public:
 			{
 				//view transformation
 				viewT = transformTriangle(worldT, viewMatrix);
-
+				//cout << "original :" << (string)viewT << endl;
 				//clipping transformation
-				vec3d off = {0.0f,0.0f,1.0f};
-				plane nearPlane = {off,{0.0f,0.0f,1.0f}};
+				cout << (string)eye_vec << endl;
+				cout << (string)dir_vec << endl;
+				cout << (string)target_vec << endl;
+				plane nearPlane = {{0,0,1},{0,0,1}};
 				triangle clippedT[2];
 				int nClipped = clipTriangle(nearPlane,viewT,clippedT[0],clippedT[1]);
 
 				for (int j=0;j<nClipped;j++)
-				{					
+				{
+					//cout << "clipped :" << (string)clippedT[j] << endl;
 					//projection transformation
 					projT = transformTriangle(clippedT[j], projectionMarix, true);
 
@@ -363,6 +357,7 @@ public:
 			int countT = 1;
 			for(plane p : screenEdges)
 			{
+				p.normal.normalize();
 				while(countT > 0)
 				{
 					triangle frontT = clippingQueue.front();
